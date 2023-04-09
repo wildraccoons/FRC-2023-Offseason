@@ -15,7 +15,8 @@ The onboard I2C is known to hang, causing system lockups, so this test is
 set up to use the I2C port on the MXP Connector, highlighted on the picture:
 ![Picture of a RoboRIO with the MXP Port circled](./misc/RoboRIO_MXPPort.png)
 
-The matching I2C pins on the NavX-micro and the MXP Port, shown in the pictures, should be connected.
+The matching I2C pins on the NavX-micro and the MXP Port should be connected.
+These pins are shown in the following pictures:
 
 ![Picture of a NavX-micro with the I2C pins circled](./misc/navx-i2c.png)
 ![The RoboRIO MXP Port pinout with the I2C pins circled](./misc/MXPPort_Pinout.png)
