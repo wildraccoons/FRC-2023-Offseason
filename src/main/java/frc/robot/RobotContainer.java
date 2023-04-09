@@ -41,7 +41,6 @@ import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
  * subsystems, commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-
     private final AHRS navx = navxInit();
 
     private final SwerveSubsystem drive = new SwerveSubsystem(DriveConstants.wheelBase, DriveConstants.trackWidth, navx,
@@ -56,6 +55,7 @@ public class RobotContainer {
         // Configure the button bindings
         configureButtonBindings();
 
+        // Drive based on joystick input when no other command is running.
         drive.setDefaultCommand(
             new RunCommand(
                 () -> drive.drive(
@@ -128,6 +128,12 @@ public class RobotContainer {
         return swerveControllerCommand.andThen(() -> drive.drive(0, 0, 0, false, false));
     }
 
+    /**
+     * Tries to initialize the a NavX on the MXP I2C port.
+     * 
+     * @return The {@code AHRS} object for the NavX.
+     *         Returns {@code null} if there is an error during instantiation.
+     */
     private AHRS navxInit() {
         try {
             return new AHRS(I2C.Port.kMXP);
