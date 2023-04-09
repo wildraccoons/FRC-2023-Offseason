@@ -65,12 +65,15 @@ public class SwerveUtils {
         return difference > Math.PI? twoPi - difference : difference;
     }
 
-    
-
+    /** 
+     * Wraps the given angle (radians) around a circle. I.E. both 2*PI and -2*PI wrap to 0.
+     * 
+     * @return The wrapped angle. Always within the range 0 to 2*PI (exclusive)
+     */
     public static double WrapAngle(double angle) {
         final double inRange = angle % twoPi;
 
-        if (inRange < 0) {
+        if (inRange < -0) {
             return twoPi + inRange;
         } else {
             return inRange;
