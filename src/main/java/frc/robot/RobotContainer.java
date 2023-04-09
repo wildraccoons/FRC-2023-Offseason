@@ -77,7 +77,7 @@ public class RobotContainer {
     private void configureButtonBindings() {
         new JoystickButton(IOConstants.joystick, 2)
             .whileTrue(new RunCommand( // Use whileTrue instead of onTrue to prevent the default command from running
-                () -> drive.setCrossed(), 
+                () -> drive.crossWheels(), 
                 drive
             ));
     }
