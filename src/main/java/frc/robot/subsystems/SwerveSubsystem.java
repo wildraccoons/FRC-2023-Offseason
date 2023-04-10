@@ -4,9 +4,8 @@ import frc.utils.SwerveUtils;
 
 import static frc.robot.Constants.DriveConstants;
 
-import com.kauailabs.navx.frc.AHRS;
-
 import edu.wpi.first.util.WPIUtilJNI;
+import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -23,7 +22,7 @@ public class SwerveSubsystem extends SubsystemBase {
     private final double base;
     private final double track;
 
-    private final AHRS navx;
+    private final Gyro gyro;
 
     private final MAXSwerveModule aModule;
     private final MAXSwerveModule bModule;
@@ -70,20 +69,20 @@ public class SwerveSubsystem extends SubsystemBase {
      * 
      * @param trackWidth The track length indicated on the diagram.
      * @param wheelBase The width of the wheelbase indicated on the diagram.
-     * @param navx The navx sensor used for gyroscopic positioning.
+     * @param gyro The gyro sensor used for gyroscopic positioning.
      * @param moduleA The MAXSwerve module at position A
      * @param moduleB The MAXSwerve module at position B
      * @param moduleC The MAXSwerve module at position C 
      * @param moduleD The MAXSwerve module at position D
      */
-    public SwerveSubsystem(double wheelBase, double trackWidth, AHRS navx,
+    public SwerveSubsystem(double wheelBase, double trackWidth, Gyro gyro,
         MAXSwerveModule moduleA, MAXSwerveModule moduleB,
         MAXSwerveModule moduleC, MAXSwerveModule moduleD
     ) {
         base = wheelBase;
         track = trackWidth;
 
-        this.navx = navx;
+        this.gyro = gyro;
 
         aModule = moduleA;
         bModule = moduleB;
@@ -97,7 +96,7 @@ public class SwerveSubsystem extends SubsystemBase {
         
         kinematics = new SwerveDriveKinematics(aPosition, bPosition, cPosition, dPosition);
         odometry = new SwerveDriveOdometry(kinematics, 
-            Rotation2d.fromDegrees(navx.getAngle()),
+            Rotation2d.fromDegrees(gyro.getAngle()),
             new SwerveModulePosition[] {
                 aModule.getPosition(),
                 bModule.getPosition(),
@@ -111,7 +110,7 @@ public class SwerveSubsystem extends SubsystemBase {
     public void periodic() {
         // Update the odometry in the periodic block.
         odometry.update(
-            Rotation2d.fromDegrees(navx.getAngle()),
+            Rotation2d.fromDegrees(gyro.getAngle()),
             new SwerveModulePosition[] {
                 aModule.getPosition(),
                 bModule.getPosition(),
@@ -127,7 +126,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public void resetOdometry(Pose2d pose) {
         odometry.resetPosition(
-            Rotation2d.fromDegrees(navx.getAngle()),
+            Rotation2d.fromDegrees(gyro.getAngle()),
             new SwerveModulePosition[] {
                 aModule.getPosition(),
                 bModule.getPosition(),
@@ -195,7 +194,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
         SwerveModuleState[] swerveModuleStates = kinematics.toSwerveModuleStates(
             fieldRelative 
-                ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered, Rotation2d.fromDegrees(navx.getAngle()))
+                ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered, Rotation2d.fromDegrees(gyro.getAngle()))
                 : new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
 
         SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, DriveConstants.maxTranslationalSpeed);
@@ -239,7 +238,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     /** Zeros the heading of the robot. */
     public void zeroHeading() {
-        navx.reset();
+        gyro.reset();
     }
 
     /**
@@ -249,7 +248,7 @@ public class SwerveSubsystem extends SubsystemBase {
      */
     public double getHeading() {
         // Map continuous gyro degrees to -180 to 180
-        return Rotation2d.fromDegrees(navx.getAngle()).getDegrees();
+        return Rotation2d.fromDegrees(gyro.getAngle()).getDegrees();
     }
 
     /**
@@ -258,7 +257,7 @@ public class SwerveSubsystem extends SubsystemBase {
      * @return The turn rate of the robot, in degrees per second.
      */
     public double getTurnRate() {
-        return navx.getRate() * (DriveConstants.gyroReversed? -1.0: 1.0);
+        return gyro.getRate() * (DriveConstants.gyroReversed? -1.0: 1.0);
     }
 
     public final SwerveDriveKinematics getKinematics() {
