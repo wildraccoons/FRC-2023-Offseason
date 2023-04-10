@@ -122,6 +122,7 @@ public final class Constants {
         public static final Joystick joystick = new Joystick(joystickPort);
         public static final double joystickDeadband = 0.05;
 
+        // CAN IDs
         public static final int aPowerId = 0;
         public static final int aRotationId = 1;
         public static final int bPowerId = 2;
