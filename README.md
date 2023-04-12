@@ -1,6 +1,6 @@
 # Swerve Drive Test
 
-This is a attempt at programming the REV MAXSwerve drive. Honestly this is mostly a
+This is an attempt at programming the REV MAXSwerve drive. Honestly this is mostly a
 rewrite of the REV MAXSwerve [Java Example](https://github.com/REVrobotics/MAXSwerve-Java-Template).
 I just rewrote it to gain a better understanding of what is going on under the hood
 for when we try to incorperate [Limelight](https://limelightvision.io/products/limelight-3) into this for exact positioning on
