@@ -96,7 +96,7 @@ public class SwerveSubsystem extends SubsystemBase {
         
         kinematics = new SwerveDriveKinematics(aPosition, bPosition, cPosition, dPosition);
         odometry = new SwerveDriveOdometry(kinematics, 
-            Rotation2d.fromDegrees(gyro.getAngle()),
+            Rotation2d.fromDegrees(gyro.getAngle() * (DriveConstants.gyroReversed ? -1.0 : 1.0)),
             new SwerveModulePosition[] {
                 aModule.getPosition(),
                 bModule.getPosition(),
@@ -110,7 +110,7 @@ public class SwerveSubsystem extends SubsystemBase {
     public void periodic() {
         // Update the odometry in the periodic block.
         odometry.update(
-            Rotation2d.fromDegrees(gyro.getAngle()),
+            Rotation2d.fromDegrees(gyro.getAngle() * (DriveConstants.gyroReversed ? -1.0 : 1.0)),
             new SwerveModulePosition[] {
                 aModule.getPosition(),
                 bModule.getPosition(),
@@ -126,7 +126,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public void resetOdometry(Pose2d pose) {
         odometry.resetPosition(
-            Rotation2d.fromDegrees(gyro.getAngle()),
+            Rotation2d.fromDegrees(gyro.getAngle() * (DriveConstants.gyroReversed ? -1.0 : 1.0)),
             new SwerveModulePosition[] {
                 aModule.getPosition(),
                 bModule.getPosition(),
@@ -194,7 +194,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
         SwerveModuleState[] swerveModuleStates = kinematics.toSwerveModuleStates(
             fieldRelative 
-                ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered, Rotation2d.fromDegrees(gyro.getAngle()))
+                ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered, Rotation2d.fromDegrees(gyro.getAngle() * (DriveConstants.gyroReversed ? -1.0 : 1.0)))
                 : new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
 
         SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, DriveConstants.maxTranslationalSpeed);
@@ -248,7 +248,7 @@ public class SwerveSubsystem extends SubsystemBase {
      */
     public double getHeading() {
         // Map continuous gyro degrees to -180 to 180
-        return Rotation2d.fromDegrees(gyro.getAngle()).getDegrees();
+        return Rotation2d.fromDegrees(gyro.getAngle() * (DriveConstants.gyroReversed ? -1.0 : 1.0)).getDegrees();
     }
 
     /**

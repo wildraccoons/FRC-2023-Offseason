@@ -11,6 +11,8 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Joystick;
 
+import edu.wpi.first.math.controller.PIDController;
+
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
  * constants. This class should not be used for any other purpose. All constants should be declared
@@ -51,7 +53,7 @@ public final class Constants {
         /** Maximum speed at which the rotation vector magnitude can change. Measured in percent/s (1 = 100%). */
         public static final double rotationalSlewRate = 2.0;
 
-        public static final boolean gyroReversed = false;
+        public static final boolean gyroReversed = true;
     }
     
     /** 
@@ -94,7 +96,7 @@ public final class Constants {
         public static final double turnEncoderPositionPIDMaxInput = turnEncoderPositionFactor; // radians (rad)
 
         // TODO: Tune drive motor gains
-        public static final double driveKP = 0.04;
+        public static final double driveKP = 0.05;
         public static final double driveKI = 0;
         public static final double driveKD = 0;
         public static final double driveFF = 1 / driveWheelFreeRps;
@@ -120,17 +122,18 @@ public final class Constants {
     public static final class IOConstants {
         public static final int joystickPort = 0;
         public static final Joystick joystick = new Joystick(joystickPort);
-        public static final double joystickDeadband = 0.05;
+        public static final double translationDeadband = 0.05;
+        public static final double rotationDeadband = 0.15;
 
         // CAN IDs
-        public static final int aPowerId = 0;
-        public static final int aRotationId = 1;
-        public static final int bPowerId = 2;
-        public static final int bRotationId = 3;
-        public static final int cPowerId = 4;
-        public static final int cRotationId = 5;
-        public static final int dPowerId = 6;
-        public static final int dRotationId = 7;
+        public static final int aPowerId = 1;
+        public static final int aRotationId = 2;
+        public static final int bPowerId = 3;
+        public static final int bRotationId = 4;
+        public static final int cPowerId = 5;
+        public static final int cRotationId = 6;
+        public static final int dPowerId = 7;
+        public static final int dRotationId = 8;
     }
 
     /** Various motor constants taken from datasheets. */
@@ -157,4 +160,17 @@ public final class Constants {
             maxAngularVelocity, maxAngularAcceleration
         );
     }
+
+    public static final class VisionConstants {
+        public static final double turnKP = 0.45;
+        public static final double turnKD = 0.0;
+        public static final double turnKI = 0.0;
+
+        public static final PIDController turnPID = new PIDController(turnKP, turnKI, turnKD);
+
+        public static final double rightFOV = 32.530;
+        public static final double leftFOV = 30.015;
+        public static final double minMove = 0.5;
+    }
+
 }

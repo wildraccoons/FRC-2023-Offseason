@@ -83,8 +83,8 @@ public class MAXSwerveModule {
         drivePID.setOutputRange(ModuleConstants.driveMinOutput, ModuleConstants.driveMaxOutput);
 
         // Set the PID gains for the turn motor.
-        turnPID.setP(ModuleConstants.driveKP);
-        turnPID.setI(ModuleConstants.driveKI);
+        turnPID.setP(ModuleConstants.turnKP);
+        turnPID.setI(ModuleConstants.turnKI);
         turnPID.setD(ModuleConstants.turnKD);
         turnPID.setFF(ModuleConstants.turnFF);
         turnPID.setOutputRange(ModuleConstants.turnMinOutput, ModuleConstants.turnMaxOutput);

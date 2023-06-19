@@ -10,6 +10,7 @@ import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.Constants.IOConstants;
 import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
+import frc.robot.Constants.VisionConstants;
 // Navx-micro
 import edu.wpi.first.wpilibj.I2C;
 
@@ -34,6 +35,10 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.DoubleSubscriber;
+import edu.wpi.first.networktables.NetworkTable;
+
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
  * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
@@ -50,7 +55,10 @@ public class RobotContainer {
         new MAXSwerveModule(IOConstants.dPowerId, IOConstants.dRotationId, DriveConstants.dAngularOffset)
     );
 
-    /** The container for the robot. Contains subsystems, OI devices, and commands. */
+    private final NetworkTable limelight = NetworkTableInstance.getDefault().getTable("limelight");
+    private final DoubleSubscriber targetOffsetHorizontal = limelight.getDoubleTopic("tx").subscribe(0.0);
+
+    /** The container for the robot. Contains subsystems, IO devices, and commands. */
     public RobotContainer() {
         // Configure the button bindings
         configureButtonBindings();
@@ -59,10 +67,10 @@ public class RobotContainer {
         drive.setDefaultCommand(
             new RunCommand(
                 () -> drive.drive(
-                    MathUtil.applyDeadband(IOConstants.joystick.getY(), IOConstants.joystickDeadband),
-                    MathUtil.applyDeadband(IOConstants.joystick.getX(), IOConstants.joystickDeadband),
-                    MathUtil.applyDeadband(IOConstants.joystick.getZ(), IOConstants.joystickDeadband),
-                    false, true
+                    MathUtil.applyDeadband(IOConstants.joystick.getY(), IOConstants.translationDeadband) * IOConstants.joystick.getRawAxis(3),
+                    MathUtil.applyDeadband(IOConstants.joystick.getX(), IOConstants.translationDeadband) * IOConstants.joystick.getRawAxis(3),
+                    MathUtil.applyDeadband(IOConstants.joystick.getZ(), IOConstants.rotationDeadband) * IOConstants.joystick.getRawAxis(3),
+                    true, true
                 ),
                 drive
             ));
@@ -80,6 +88,23 @@ public class RobotContainer {
                 () -> drive.crossWheels(), 
                 drive
             ));
+
+        new JoystickButton(IOConstants.joystick, 1)
+            .whileTrue(new RunCommand(
+                () -> {
+                    double readOffset = targetOffsetHorizontal.get();
+                    if (readOffset < 0.0) {
+                        readOffset /= VisionConstants.leftFOV;
+                    }  else {
+                        readOffset /= VisionConstants.rightFOV;
+                    }
+
+                    drive.drive(0.0, 0.0, VisionConstants.turnPID.calculate(readOffset), false, true);
+                }, drive
+            ));
+
+        new JoystickButton(IOConstants.joystick, 12)
+            .onTrue(new RunCommand(() -> System.out.println(navx.getAngle())));
     }
 
     /**
