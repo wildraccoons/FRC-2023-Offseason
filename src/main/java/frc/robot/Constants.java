@@ -162,8 +162,8 @@ public final class Constants {
     }
 
     public static final class VisionConstants {
-        public static final double turnKP = 0.45;
-        public static final double turnKD = 0.0;
+        public static final double turnKP = 0.35;
+        public static final double turnKD = 0.01;
         public static final double turnKI = 0.0;
 
         public static final PIDController turnPID = new PIDController(turnKP, turnKI, turnKD);
