@@ -18,6 +18,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+/** Control subsystem used to command a swerve drive base. */
 public class SwerveSubsystem extends SubsystemBase {
     private final double base;
     private final double track;
@@ -122,7 +123,8 @@ public class SwerveSubsystem extends SubsystemBase {
 
     
     /** 
-     * @return Pose2d
+     * Gets the recorded pose of the robot.
+     * @return Current calculated pose.
      */
     public Pose2d getPose() {
         return odometry.getPoseMeters();
@@ -130,7 +132,8 @@ public class SwerveSubsystem extends SubsystemBase {
 
     
     /** 
-     * @param pose
+     * Resets the swerve odometry to the given pose.
+     * @param pose Pose to reset the odometry to.
      */
     public void resetOdometry(Pose2d pose) {
         odometry.resetPosition(
@@ -213,9 +216,7 @@ public class SwerveSubsystem extends SubsystemBase {
         dModule.setTargetState(swerveModuleStates[3]);
     }
 
-    /**
-     * Sets the wheels into an X formation to prevent movement.
-     */
+    /** Sets the wheels into an X formation to prevent movement. */
     public void crossWheels() {
         aModule.setTargetState(new SwerveModuleState(0, Rotation2d.fromDegrees(45)));
         bModule.setTargetState(new SwerveModuleState(0, Rotation2d.fromDegrees(-45)));
@@ -270,6 +271,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     
     /** 
+     * Gets the inner {@link edu.wpi.first.math.kinematics.SwerveDriveKinematics kinematics} object.
      * @return SwerveDriveKinematics
      */
     public final SwerveDriveKinematics getKinematics() {

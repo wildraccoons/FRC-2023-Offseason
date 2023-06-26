@@ -41,6 +41,7 @@ public class MAXSwerveModule {
      * 
      * @param driveId The CAN Id of the drive motor (NEO)
      * @param turnId The CAN Id of the turning motor (NEO 550)
+     * @param angularOffset Angular offset of the swerve module compared to the zero.
      */
     public MAXSwerveModule(int driveId, int turnId, double angularOffset) {
         driveSpark = new CANSparkMax(driveId, ModuleConstants.driveMotorType);
@@ -90,7 +91,7 @@ public class MAXSwerveModule {
         turnPID.setOutputRange(ModuleConstants.turnMinOutput, ModuleConstants.turnMaxOutput);
 
         driveSpark.setIdleMode(ModuleConstants.driveMotorIdleMode);
-        turnSpark.setIdleMode(ModuleConstants.turnModorIdleMode);
+        turnSpark.setIdleMode(ModuleConstants.turnMotorIdleMode);
         driveSpark.setSmartCurrentLimit(ModuleConstants.driveMotorCurrentLimit);
         turnSpark.setSmartCurrentLimit(ModuleConstants.turnMotorCurrentLimit);
 

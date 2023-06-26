@@ -72,7 +72,7 @@ public class RobotContainer {
                     drive.drive(
                         MathUtil.applyDeadband(IOConstants.controller.getLeftY(), IOConstants.translationDeadband) * (IOConstants.xyInverted ? -DriveConstants.speed : DriveConstants.speed),
                         MathUtil.applyDeadband(IOConstants.controller.getLeftX(), IOConstants.translationDeadband) * (IOConstants.xyInverted ? -DriveConstants.speed : DriveConstants.speed),
-                        MathUtil.applyDeadband(IOConstants.controller.getRightX(), IOConstants.rotationDeadband) * (IOConstants.zInverted ? -DriveConstants.speed : DriveConstants.speed),
+                        MathUtil.applyDeadband(IOConstants.controller.getRightX(), IOConstants.rotationDeadband) * (IOConstants.rotInverted ? -DriveConstants.speed : DriveConstants.speed),
                         true, true
                     );
                 }, drive
