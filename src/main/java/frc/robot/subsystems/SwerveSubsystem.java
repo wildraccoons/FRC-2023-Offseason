@@ -55,7 +55,7 @@ public class SwerveSubsystem extends SubsystemBase {
      * Motors and dimensions are placed like so on the diagram:
      * <pre>
      * 
-     * ‏     Track
+     * &ensp;   Track
      *  ┌─────────┐
      * ┌───────────┐
      * │A         B│  ─┐
@@ -107,6 +107,7 @@ public class SwerveSubsystem extends SubsystemBase {
         );
     }
 
+    /** Updates the odometry every event cycle */
     @Override
     public void periodic() {
         // Update the odometry in the periodic block.
