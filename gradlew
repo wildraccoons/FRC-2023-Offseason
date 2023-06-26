@@ -202,8 +202,10 @@ fi
 set -- \
         "-Dorg.gradle.appname=$APP_BASE_NAME" \
         -classpath "$CLASSPATH" \
+        -encoding "utf-8" \
         org.gradle.wrapper.GradleWrapperMain \
-        "$@"
+        "$@" 
+        
 
 # Stop when "xargs" is not available.
 if ! command -v xargs >/dev/null 2>&1

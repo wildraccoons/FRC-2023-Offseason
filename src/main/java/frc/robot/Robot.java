@@ -18,7 +18,6 @@ public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
 
     private RobotContainer m_robotContainer;
-
     /**
      * This function is run when the robot is first started up and should be used for any
      * initialization code.
@@ -50,6 +49,8 @@ public class Robot extends TimedRobot {
     @Override
     public void disabledInit() {}
 
+    
+    /** This function is called periodicaly when robot is disabled .*/
     @Override
     public void disabledPeriodic() {}
 

@@ -68,6 +68,7 @@ public class SwerveUtils {
     /** 
      * Wraps the given angle (radians) around a circle. I.E. both 2*PI and -2*PI wrap to 0.
      * 
+     * @param angle The angle in radians.
      * @return The wrapped angle. Always within the range 0 to 2*PI (exclusive)
      */
     public static double WrapAngle(double angle) {
