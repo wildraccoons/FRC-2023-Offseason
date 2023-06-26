@@ -13,10 +13,10 @@ import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.VisionConstants;
 // Navx-micro
 import edu.wpi.first.wpilibj.I2C;
+import com.kauailabs.navx.frc.AHRS;
 
 import java.util.List;
 
-import com.kauailabs.navx.frc.AHRS;
 // Math
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
@@ -33,6 +33,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -66,14 +67,17 @@ public class RobotContainer {
         // Drive based on joystick input when no other command is running.
         drive.setDefaultCommand(
             new RunCommand(
-                () -> drive.drive(
-                    MathUtil.applyDeadband(IOConstants.joystick.getY(), IOConstants.translationDeadband) * IOConstants.joystick.getRawAxis(3),
-                    MathUtil.applyDeadband(IOConstants.joystick.getX(), IOConstants.translationDeadband) * IOConstants.joystick.getRawAxis(3),
-                    MathUtil.applyDeadband(IOConstants.joystick.getZ(), IOConstants.rotationDeadband) * IOConstants.joystick.getRawAxis(3),
-                    true, true
-                ),
-                drive
-            ));
+                () -> {
+                    System.out.println(navx.getAngle());
+                    drive.drive(
+                        MathUtil.applyDeadband(IOConstants.controller.getLeftY(), IOConstants.translationDeadband) * (IOConstants.xyInverted ? -DriveConstants.speed : DriveConstants.speed),
+                        MathUtil.applyDeadband(IOConstants.controller.getLeftX(), IOConstants.translationDeadband) * (IOConstants.xyInverted ? -DriveConstants.speed : DriveConstants.speed),
+                        MathUtil.applyDeadband(IOConstants.controller.getRightX(), IOConstants.rotationDeadband) * (IOConstants.zInverted ? -DriveConstants.speed : DriveConstants.speed),
+                        true, true
+                    );
+                }, drive
+            )
+        );
     }
 
     /**
@@ -83,13 +87,13 @@ public class RobotContainer {
      * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
      */
     private void configureButtonBindings() {
-        new JoystickButton(IOConstants.joystick, 2)
+        new JoystickButton(IOConstants.controller, XboxController.Button.kX.value)
             .whileTrue(new RunCommand( // Use whileTrue instead of onTrue to prevent the default command from running
                 () -> drive.crossWheels(), 
                 drive
             ));
 
-        new JoystickButton(IOConstants.joystick, 1)
+        new JoystickButton(IOConstants.controller, XboxController.Button.kRightBumper.value)
             .whileTrue(new RunCommand(
                 () -> {
                     double readOffset = targetOffsetHorizontal.get();
@@ -103,8 +107,11 @@ public class RobotContainer {
                 }, drive
             ));
 
-        new JoystickButton(IOConstants.joystick, 12)
+        new JoystickButton(IOConstants.controller, 12)
             .onTrue(new RunCommand(() -> System.out.println(navx.getAngle())));
+
+        new JoystickButton(IOConstants.controller, XboxController.Button.kBack.value)
+            .onTrue(new RunCommand(() -> navx.zeroYaw()));
     }
 
     /**
@@ -161,7 +168,7 @@ public class RobotContainer {
      */
     private AHRS navxInit() {
         try {
-            return new AHRS(I2C.Port.kMXP);
+            return new AHRS(I2C.Port.kOnboard);
         } catch (RuntimeException ex) {
             DriverStation.reportError("Error instantiating mavX-micro: " + ex.getMessage(), true);
             return null;

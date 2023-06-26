@@ -120,10 +120,18 @@ public class SwerveSubsystem extends SubsystemBase {
         );
     }
 
+    
+    /** 
+     * @return Pose2d
+     */
     public Pose2d getPose() {
         return odometry.getPoseMeters();
     }
 
+    
+    /** 
+     * @param pose
+     */
     public void resetOdometry(Pose2d pose) {
         odometry.resetPosition(
             Rotation2d.fromDegrees(gyro.getAngle() * (DriveConstants.gyroReversed ? -1.0 : 1.0)),
@@ -260,6 +268,10 @@ public class SwerveSubsystem extends SubsystemBase {
         return gyro.getRate() * (DriveConstants.gyroReversed? -1.0: 1.0);
     }
 
+    
+    /** 
+     * @return SwerveDriveKinematics
+     */
     public final SwerveDriveKinematics getKinematics() {
         return kinematics;
     }

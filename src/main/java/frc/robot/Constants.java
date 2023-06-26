@@ -9,7 +9,7 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.XboxController;
 
 import edu.wpi.first.math.controller.PIDController;
 
@@ -29,12 +29,12 @@ public final class Constants {
     public static final class DriveConstants {
         /** 
          * Distance between centers of front and back wheels on drivetrain. 
-         * Explained in more detail in {@link frc.robot.subsystems.SwerveSubsystem#SwerveSubsystem(double, double, int, int, int, int, int, int, int, int, com.kauailabs.navx.frc.AHRS) <code>new frc.robot.subsystems.SwerveSubsystem()</code>}
+         * Explained in more detail in {@link frc.robot.subsystems.SwerveSubsystem#SwerveSubsystem(double, double, edu.wpi.first.wpilibj.interfaces.Gyro, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule) <code>new frc.robot.subsystems.SwerveSubsystem()</code>}
          */
         public static final double wheelBase = Units.inchesToMeters(26.5); // Meters (m)
         /** 
          * Distance between centers of right and left wheels on drivetrain.
-         * Explained in more detail in {@link frc.robot.subsystems.SwerveSubsystem#SwerveSubsystem(double, double, int, int, int, int, int, int, int, int, com.kauailabs.navx.frc.AHRS) <code>new frc.robot.subsystems.SwerveSubsystem()</code>}
+         * Explained in more detail in {@link frc.robot.subsystems.SwerveSubsystem#SwerveSubsystem(double, double, edu.wpi.first.wpilibj.interfaces.Gyro, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule) <code>new frc.robot.subsystems.SwerveSubsystem()</code>}
          */
         public static final double trackWidth = Units.inchesToMeters(26.5); // Meters (m)
 
@@ -47,13 +47,15 @@ public final class Constants {
         public static final double maxAngularSpeed = 2 * Math.PI;
 
         /** Maximum speed at which the translation vector direction ({@code Math.atan2(y, x)}) can change. Measured in rads/s. */
-        public static final double directionSlewRate = 1.2;
+        public static final double directionSlewRate = Math.PI;
         /** Maximum speed at which the translation vector magnitude ({@code Math.sqrt(x*x + y*y)}) can change. Measured in percent/s (1 = 100%). */
         public static final double magnitudeSlewRate = 1.8;
         /** Maximum speed at which the rotation vector magnitude can change. Measured in percent/s (1 = 100%). */
         public static final double rotationalSlewRate = 2.0;
 
         public static final boolean gyroReversed = true;
+
+        public static final double speed = 0.5;
     }
     
     /** 
@@ -120,8 +122,12 @@ public final class Constants {
 
     /** Constants relating to I/O and control such as ports, IDs, control constants, etc. */
     public static final class IOConstants {
-        public static final int joystickPort = 0;
-        public static final Joystick joystick = new Joystick(joystickPort);
+        public static final int controllerPort = 0;
+        public static final XboxController controller = new XboxController(controllerPort);
+
+        public static final boolean xyInverted = true;
+        public static final boolean zInverted = true;
+
         public static final double translationDeadband = 0.05;
         public static final double rotationDeadband = 0.15;
 
