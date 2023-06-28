@@ -69,10 +69,15 @@ public class RobotContainer {
             new RunCommand(
                 () -> {
                     System.out.println(navx.getAngle());
+                    double forward = MathUtil.applyDeadband(IOConstants.controller.getLeftY(), IOConstants.translationDeadband);
+                    double strafe = MathUtil.applyDeadband(IOConstants.controller.getLeftX(), IOConstants.translationDeadband);
+                    double rotation = MathUtil.applyDeadband(IOConstants.controller.getRightX(), IOConstants.rotationDeadband);
+                    double speed = IOConstants.controller.getRightTriggerAxis();
+
                     drive.drive(
-                        MathUtil.applyDeadband(IOConstants.controller.getLeftY(), IOConstants.translationDeadband) * (IOConstants.xyInverted ? -DriveConstants.speed : DriveConstants.speed),
-                        MathUtil.applyDeadband(IOConstants.controller.getLeftX(), IOConstants.translationDeadband) * (IOConstants.xyInverted ? -DriveConstants.speed : DriveConstants.speed),
-                        MathUtil.applyDeadband(IOConstants.controller.getRightX(), IOConstants.rotationDeadband) * (IOConstants.rotInverted ? -DriveConstants.speed : DriveConstants.speed),
+                        forward * speed * (IOConstants.xyInverted ? -1.0 : 1.0),
+                        strafe * speed * (IOConstants.xyInverted ? -1.0 : 1.0),
+                        rotation * speed * (IOConstants.rotInverted ? -1.0 : 1.0),
                         true, true
                     );
                 }, drive
@@ -93,7 +98,7 @@ public class RobotContainer {
                 drive
             ));
 
-        new JoystickButton(IOConstants.controller, XboxController.Button.kRightBumper.value)
+        new JoystickButton(IOConstants.controller, XboxController.Axis.kRightTrigger.value)
             .whileTrue(new RunCommand(
                 () -> {
                     double readOffset = targetOffsetHorizontal.get();
@@ -107,7 +112,7 @@ public class RobotContainer {
                 }, drive
             ));
 
-        new JoystickButton(IOConstants.controller, 12)
+        new JoystickButton(IOConstants.controller, XboxController.Button.kRightBumper.value)
             .onTrue(new RunCommand(() -> System.out.println(navx.getAngle())));
 
         new JoystickButton(IOConstants.controller, XboxController.Button.kBack.value)
