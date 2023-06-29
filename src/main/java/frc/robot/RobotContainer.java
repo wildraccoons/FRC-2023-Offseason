@@ -14,6 +14,10 @@ import frc.robot.Constants.VisionConstants;
 // Navx-micro
 import edu.wpi.first.wpilibj.I2C;
 import com.kauailabs.navx.frc.AHRS;
+// Motors
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import wildlib.PIDSparkMax;
 
 import java.util.List;
 
@@ -32,10 +36,11 @@ import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
-
+// Network Tables
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
@@ -56,6 +61,11 @@ public class RobotContainer {
         new MAXSwerveModule(IOConstants.dPowerId, IOConstants.dRotationId, DriveConstants.dAngularOffset)
     );
 
+    private final PIDSparkMax armExtension = new PIDSparkMax(IOConstants.armExtensionId, MotorType.kBrushless);
+    private final PIDSparkMax armRotation = new PIDSparkMax(IOConstants.armRotationId, MotorType.kBrushless);
+    // private final PIDSparkMax grabberRotation = new PIDSparkMax(IOConstants.grabberRotationId, MotorType.kBrushless);
+    // private final PIDSparkMax grabberContraction = new PIDSparkMax(IOConstants.grabberContractionId, MotorType.kBrushless);
+    
     private final NetworkTable limelight = NetworkTableInstance.getDefault().getTable("limelight");
     private final DoubleSubscriber targetOffsetHorizontal = limelight.getDoubleTopic("tx").subscribe(0.0);
 
@@ -68,7 +78,6 @@ public class RobotContainer {
         drive.setDefaultCommand(
             new RunCommand(
                 () -> {
-                    System.out.println(navx.getAngle());
                     double forward = MathUtil.applyDeadband(IOConstants.controller.getLeftY(), IOConstants.translationDeadband);
                     double strafe = MathUtil.applyDeadband(IOConstants.controller.getLeftX(), IOConstants.translationDeadband);
                     double rotation = MathUtil.applyDeadband(IOConstants.controller.getRightX(), IOConstants.rotationDeadband);
@@ -92,13 +101,14 @@ public class RobotContainer {
      * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
      */
     private void configureButtonBindings() {
-        new JoystickButton(IOConstants.controller, XboxController.Button.kX.value)
+        IOConstants.controller.x()
             .whileTrue(new RunCommand( // Use whileTrue instead of onTrue to prevent the default command from running
                 () -> drive.crossWheels(), 
                 drive
             ));
 
-        new JoystickButton(IOConstants.controller, XboxController.Axis.kRightTrigger.value)
+        IOConstants.controller
+            .leftTrigger()
             .whileTrue(new RunCommand(
                 () -> {
                     double readOffset = targetOffsetHorizontal.get();
@@ -112,11 +122,18 @@ public class RobotContainer {
                 }, drive
             ));
 
-        new JoystickButton(IOConstants.controller, XboxController.Button.kRightBumper.value)
-            .onTrue(new RunCommand(() -> System.out.println(navx.getAngle())));
+        IOConstants.controller.rightBumper().onTrue(new InstantCommand(() -> System.out.println(navx.getAngle())));
+        IOConstants.controller.back().onTrue(new InstantCommand(() -> {
+            System.out.println("zero");
+            navx.zeroYaw();
+        }));
 
-        new JoystickButton(IOConstants.controller, XboxController.Button.kBack.value)
-            .onTrue(new RunCommand(() -> navx.zeroYaw()));
+        // IOConstants.controller.povRight().whileTrue(new RunCommand(() -> grabberContraction.setMotor(0.5)));
+        // IOConstants.controller.povLeft().whileTrue(new RunCommand(() -> grabberContraction.setMotor(-0.5)));
+            
+        IOConstants.controller.povUp().whileTrue(new RunCommand(() -> {
+
+        }));
     }
 
     /**
