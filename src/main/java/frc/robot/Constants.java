@@ -9,6 +9,7 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 
 import edu.wpi.first.math.controller.PIDController;
@@ -148,8 +149,10 @@ public final class Constants {
     public static final class IOConstants {
         /** XBOX controller port. */
         public static final int controllerPort = 0;
-        /** XBOX controller. */
-        public static final CommandXboxController controller = new CommandXboxController(controllerPort);
+        /** XBOX controller */
+        public static final XboxController controller = new XboxController(controllerPort);
+        /** Command based XBOX controller. */
+        public static final CommandXboxController commandController = new CommandXboxController(controllerPort);
         /** Used to invert the X and Y inputs of the controller. */
         public static final boolean xyInverted = true;
         /** Used to invert the rotation input of the controller. */
@@ -178,10 +181,10 @@ public final class Constants {
         /** Spark Max CAN ID for the direction motor on module D */
         public static final int dRotationId = 8;
 
-        /** Spark Max CAN ID for the arm extension motor. */
-        public static final int armExtensionId = 11;
         /** Spark Max CAN ID for the arm rotation motor. */
-        public static final int armRotationId = 12;
+        public static final int armRotationId = 11;
+        /** Spark Max CAN ID for the arm extension motor. */
+        public static final int armExtensionId = 12;
         /** Spark Max CAN ID for the grabber rotation motor. */
         public static final int grabberRotationId = 13;
         /** Spark Max CAN ID for the grabber contraction. */

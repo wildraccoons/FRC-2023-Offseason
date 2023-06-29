@@ -1,25 +1,24 @@
 package wildlib;
 
+import java.util.Optional;
+
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.REVLibError;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
-import com.revrobotics.CANSparkMax.ControlType;
-import com.revrobotics.CANSparkMax.SoftLimitDirection;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 /** Utility class for a Spark Max PID controller */
-public class PIDSparkMax {
+public class PIDSparkMax extends CANSparkMax {
     private static double kP = 0.2; 
     private static double kI = 1e-4;
     private static double kD = 1; 
 
-    public double kIz = 0; 
-    public double kFF = 0; 
+    private double kIz = 0; 
+    private double kFF = 0; 
     
-    public double kMaxOutput = 0.75; 
-    public double kMinOutput = -0.75;
+    private double kMaxOutput = 0.75; 
+    private double kMinOutput = -0.75;
 
-    private CANSparkMax motor;
     private RelativeEncoder encoder;
     private SparkMaxPIDController controller;
 
@@ -28,49 +27,11 @@ public class PIDSparkMax {
     private LimitSwitch limitForward;
     private LimitSwitch limitBackward;
 
-    /** Creates a new {@link PIDSparkMax} with specified {@code kP}, {@code kI}, {@code kD} values.
-     * 
-     * @param proportional Sets the {@code kP} of the PID.
-     * @param integral Sets the {@code kI} of the PID.
-     * @param derivative Sets the {@code kD} of the PID.
-     * @param motor The motor to control.
-     */
-    public PIDSparkMax(CANSparkMax motor, double proportional, double integral, double derivative){
-        this.motor = motor;
-        this.encoder = motor.getEncoder();
-        this.controller = motor.getPIDController();
-
-        controller.setP(proportional);
-        controller.setI(integral);
-        controller.setD(derivative);
-        
-        controller.setIZone(kIz);
-        controller.setFF(kFF);
-        controller.setOutputRange(kMinOutput, kMaxOutput);
-        controller.setFeedbackDevice(encoder);
-    }
-
     /** Creates a new {@link PIDSparkMax} with default {@code kP}, {@code kI}, {@code kD} values.
-     * <br></br>
-     * Default values are:<br></br>
-     * <strong><code>kP:</code></strong> <code>0.2</code> <br></br>
-     * <strong><code>kI:</code></strong> <code>1e-4</code> <br></br>
-     * <strong><code>kD:</code></strong> <code>1</code>
-     * 
-     * @param motor The motor to control.
-     * @param encoder A {@link com.revrobotics.RelativeEncoder RelativeEncoder} that
-     *                recoder the position of the motor. Usually gotten through
-     *                {@link com.revrobotics.CANSparkMax#getEncoder() motor.getEncoder}.
-     */
-    public PIDSparkMax(CANSparkMax motor) {
-        this(motor, kP, kI, kD);
-    }
-
-    /** Creates a new {@link PIDSparkMax} with default {@code kP}, {@code kI}, {@code kD} values.
-     * <br></br>
-     * Default values are:<br></br>
-     * <strong><code>kP:</code></strong> <code>0.2</code> <br></br>
-     * <strong><code>kI:</code></strong> <code>1e-4</code> <br></br>
+     * <br><br>
+     * Default values are:<br><br>
+     * <strong><code>kP:</code></strong> <code>0.2</code> <br><br>
+     * <strong><code>kI:</code></strong> <code>1e-4</code> <br><br>
      * <strong><code>kD:</code></strong> <code>1</code>
      * 
      * @param deviceId The motor CAN Id
@@ -93,7 +54,18 @@ public class PIDSparkMax {
      * @param derivative Sets the {@code kD} of the PID.
      */
     public PIDSparkMax(int deviceId, MotorType type, double proportional, double integral, double derivative) {
-        this(new CANSparkMax(deviceId, type), proportional, integral, derivative);
+        super(deviceId, type);
+        this.encoder = super.getEncoder();
+        this.controller = super.getPIDController();
+
+        controller.setP(proportional);
+        controller.setI(integral);
+        controller.setD(derivative);
+        
+        controller.setIZone(kIz);
+        controller.setFF(kFF);
+        controller.setOutputRange(kMinOutput, kMaxOutput);
+        controller.setFeedbackDevice(encoder);
     }
 
     /** 
@@ -101,7 +73,7 @@ public class PIDSparkMax {
      * <strong>Note:</strong>  Because this function wraps
      * {@link com.revrobotics.SparkMaxPIDController#setOutputRange(double, double) setOutputRange()},
      * setting this below zero stops the motor from rotating forwards.
-    */
+     */
     public void setMaxOutput(double output) {
         this.kMaxOutput = output;
         this.controller.setOutputRange(this.kMinOutput, this.kMaxOutput);
@@ -112,7 +84,7 @@ public class PIDSparkMax {
      * <strong>Note:</strong>  Because this function wraps
      * {@link com.revrobotics.SparkMaxPIDController#setOutputRange(double, double) setOutputRange()},
      * setting this above zero stops the motor from rotating in reverse.
-    */
+     */
     public void setMinOutput(double output) {
         this.kMinOutput = output;
         this.controller.setOutputRange(this.kMinOutput, this.kMaxOutput);
@@ -125,7 +97,7 @@ public class PIDSparkMax {
      * 
      * @param enable Enable ({@code true}) or disable ({@code false}) limit switch checking.
      * @param direction The direction to set.
-    */
+     */
     public void enableLimitSwitch(boolean enable, CANSparkMax.SoftLimitDirection direction) {
         switch (direction) {
         case kForward:
@@ -140,7 +112,7 @@ public class PIDSparkMax {
      * The motor will refuse to turn if it is told to
      * drive past the limit. Must be enabled with
      * {@link #enableLimitSwitch(boolean, SoftLimitDirection) enableLimitSwitch()}
-     * in order to take effect.<br></br>
+     * in order to take effect.<br><br>
      * <strong>Note:</strong> Since {@link #setReference(double, ControlType) setReference()}
      * sets a value in the physical Spark Max, the motor will continue to try and reach the
      * previously set reference if {@link #setReference(double, ControlType) setReference()}
@@ -160,29 +132,25 @@ public class PIDSparkMax {
         this.encoder.setPosition(pos);
     }
 
-    /** 
-     * Sets the speed of the motor through the motor controller.
-     * 
-     * @param speed The speed to set. Value should be between -1.0 and 1.0.
-     */
-    public void setMotor(double speed) {
+    @Override
+    public void set(double speed) {
         boolean checkForward = this.limitEnabledForward && this.limitForward != null && this.limitBackward.getPressed();
         boolean checkBackward = this.limitEnabledBackward && this.limitBackward != null && this.limitBackward.getPressed();
         if ((!checkForward || speed < 0) && (!checkBackward || speed > 0)) {
-            this.motor.set(speed);
+            super.set(speed);
         } else {
-            this.motor.stopMotor();
+            this.disable();
         }
     }
     
     /** 
      * Stops motor movement. Motor can be moved again by calling
-     * {@link #setMotor(double) setMotor()} without having to re-enable the motor.
-     * <br></br>
+     * {@link #set(double) setMotor()} without having to re-enable the motor.
+     * <br><br>
      * May be overriden by the PID reference. 
      */
     public void stopMotor() {
-        this.motor.stopMotor();
+        super.stopMotor();
     }
 
     /** 
@@ -200,13 +168,13 @@ public class PIDSparkMax {
             if ((checkForward && value >= this.encoder.getPosition()) || (checkBackward && value <= this.encoder.getPosition())) {
                 this.controller.setReference(0, ControlType.kVelocity);
             } else {
-                this.controller.setReference(value, ctrl);
+                this.disable();
             }
         case kVelocity:
             if ((!checkForward || value < 0) && (!checkBackward || value > 0)) {
                 this.controller.setReference(value, ctrl);
             } else {
-                this.controller.setReference(0, ControlType.kVelocity);
+                this.disable();
             }
         default:
             this.controller.setReference(value, ctrl);
@@ -250,19 +218,18 @@ public class PIDSparkMax {
     }
 
     /** 
-     * Returns the {@link LimitSwitch limit switch} added for the
+     * Returns the state of the {@link LimitSwitch limit switch} added for the
      * given direction. Returns {@code null} if no {@link LimitSwitch limit switch}
      * has been added.
      */
-    public boolean getLimit(SoftLimitDirection direction) {
-        if (direction == SoftLimitDirection.kForward) {
-            return this.limitForward.getPressed();
+    public Optional<Boolean> getLimit(SoftLimitDirection direction) {
+        LimitSwitch read = direction == SoftLimitDirection.kForward ? this.limitForward : this.limitBackward;
+        if (read == null) {
+            return null;
         } else {
-            return this.limitBackward.getPressed();
+            return Optional.of(read.getPressed());
         }
     }
-
-    
 
     /** Get the velocity of the motor from the encoder.
      * This returns the native units of 'RPM' by default.
@@ -271,5 +238,26 @@ public class PIDSparkMax {
      */
     public double getVelocity() {
         return this.encoder.getVelocity();
+    }
+    
+    /**
+     * Writes all settings to flash.
+     * @return {@link REVLibError#kOk} if successful
+     */
+    public REVLibError burnFlash() {
+        return super.burnFlash();
+    }
+
+    /**
+     * Clears all sticky faults.
+     * @return {@link REVLibError#kOk} if successful
+     */
+    public REVLibError clearFaults() {
+        return super.clearFaults();
+    }
+
+    /** Common interface for disabling a motor. */
+    public void disable() {
+        super.disable();
     }
 }

@@ -6,6 +6,7 @@ package frc.robot;
 // Swerve
 import frc.robot.subsystems.MAXSwerveModule;
 import frc.robot.subsystems.SwerveSubsystem;
+import frc.utils.commands.DoubleEvent;
 // Constants
 import frc.robot.Constants.IOConstants;
 import frc.robot.Constants.AutoConstants;
@@ -15,11 +16,16 @@ import frc.robot.Constants.VisionConstants;
 import edu.wpi.first.wpilibj.I2C;
 import com.kauailabs.navx.frc.AHRS;
 // Motors
-import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkMax.IdleMode;
+import com.revrobotics.CANSparkMax.SoftLimitDirection;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+
+import wildlib.LimitSwitch;
 import wildlib.PIDSparkMax;
 
 import java.util.List;
+import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
 
 // Math
 import edu.wpi.first.math.MathUtil;
@@ -37,9 +43,12 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.event.BooleanEvent;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 // Network Tables
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.DoubleSubscriber;
@@ -63,25 +72,59 @@ public class RobotContainer {
 
     private final PIDSparkMax armExtension = new PIDSparkMax(IOConstants.armExtensionId, MotorType.kBrushless);
     private final PIDSparkMax armRotation = new PIDSparkMax(IOConstants.armRotationId, MotorType.kBrushless);
+    private final LimitSwitch extensionLimit = new LimitSwitch(0);
     // private final PIDSparkMax grabberRotation = new PIDSparkMax(IOConstants.grabberRotationId, MotorType.kBrushless);
     // private final PIDSparkMax grabberContraction = new PIDSparkMax(IOConstants.grabberContractionId, MotorType.kBrushless);
     
     private final NetworkTable limelight = NetworkTableInstance.getDefault().getTable("limelight");
     private final DoubleSubscriber targetOffsetHorizontal = limelight.getDoubleTopic("tx").subscribe(0.0);
 
+    private double previousAccelX = 0.0;
+    private double previousAccelY = 0.0;
+
+    DoubleSupplier navxJerkX = () -> {
+        double currentAccelX = navx.getWorldLinearAccelX();
+        double jerkX = currentAccelX - previousAccelX;
+        previousAccelX = currentAccelX;
+
+        return jerkX;
+    };
+
+    DoubleSupplier navxJerkY = () -> {
+        double currentAccelY = navx.getWorldLinearAccelY();
+        double jerkY = currentAccelY - previousAccelY;
+        previousAccelY = currentAccelY;
+
+        return jerkY;
+    };
+
+    private static final double COLLISION_THRESHOLD = 0.5;
+
     /** The container for the robot. Contains subsystems, IO devices, and commands. */
     public RobotContainer() {
         // Configure the button bindings
         configureButtonBindings();
 
+        new DoubleEvent(navxJerkX, (double jerk) -> Math.abs(jerk) > COLLISION_THRESHOLD)
+            .onTrue(new InstantCommand(() -> IOConstants.controller.setRumble(RumbleType.kBothRumble, 1.0)));
+
+        new DoubleEvent(navxJerkY, (double jerk) -> Math.abs(jerk) > COLLISION_THRESHOLD)
+            .onTrue(new InstantCommand(() -> IOConstants.controller.setRumble(RumbleType.kBothRumble, 1.0)));
+
+        armExtension.addLimitSwitch(extensionLimit, SoftLimitDirection.kReverse);
+        armExtension.setInverted(true);
+
+        armExtension.setIdleMode(IdleMode.kBrake);
+        armRotation.setIdleMode(IdleMode.kBrake);
+
         // Drive based on joystick input when no other command is running.
         drive.setDefaultCommand(
             new RunCommand(
                 () -> {
-                    double forward = MathUtil.applyDeadband(IOConstants.controller.getLeftY(), IOConstants.translationDeadband);
-                    double strafe = MathUtil.applyDeadband(IOConstants.controller.getLeftX(), IOConstants.translationDeadband);
-                    double rotation = MathUtil.applyDeadband(IOConstants.controller.getRightX(), IOConstants.rotationDeadband);
-                    double speed = IOConstants.controller.getRightTriggerAxis();
+                    double forward = MathUtil.applyDeadband(IOConstants.commandController.getLeftY(), IOConstants.translationDeadband);
+                    double strafe = MathUtil.applyDeadband(IOConstants.commandController.getLeftX(), IOConstants.translationDeadband);
+                    double rotation = MathUtil.applyDeadband(IOConstants.commandController.getRightX(), IOConstants.rotationDeadband);
+                    double speed = IOConstants.commandController.getRightTriggerAxis();
 
                     drive.drive(
                         forward * speed * (IOConstants.xyInverted ? -1.0 : 1.0),
@@ -101,13 +144,13 @@ public class RobotContainer {
      * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
      */
     private void configureButtonBindings() {
-        IOConstants.controller.x()
+        IOConstants.commandController.x()
             .whileTrue(new RunCommand( // Use whileTrue instead of onTrue to prevent the default command from running
                 () -> drive.crossWheels(), 
                 drive
             ));
 
-        IOConstants.controller
+        IOConstants.commandController
             .leftTrigger()
             .whileTrue(new RunCommand(
                 () -> {
@@ -122,18 +165,31 @@ public class RobotContainer {
                 }, drive
             ));
 
-        IOConstants.controller.rightBumper().onTrue(new InstantCommand(() -> System.out.println(navx.getAngle())));
-        IOConstants.controller.back().onTrue(new InstantCommand(() -> {
-            System.out.println("zero");
+        IOConstants.commandController.rightBumper().onTrue(new InstantCommand(() -> System.out.println(navx.getAngle())));
+        IOConstants.commandController.back().onTrue(new InstantCommand(() -> {
+            System.out.println("Zeroing ");
             navx.zeroYaw();
         }));
 
-        // IOConstants.controller.povRight().whileTrue(new RunCommand(() -> grabberContraction.setMotor(0.5)));
-        // IOConstants.controller.povLeft().whileTrue(new RunCommand(() -> grabberContraction.setMotor(-0.5)));
+        // IOConstants.commandController.povRight().whileTrue(new RunCommand(() -> grabberContraction.setMotor(0.5)));
+        // IOConstants.commandController.povLeft().whileTrue(new RunCommand(() -> grabberContraction.setMotor(-0.5)));
             
-        IOConstants.controller.povUp().whileTrue(new RunCommand(() -> {
+        IOConstants.commandController.povUp()
+            .whileTrue(new RunCommand(() -> armExtension.set(0.25)))
+            .onFalse(new RunCommand(() -> armExtension.stopMotor()));
 
-        }));
+        IOConstants.commandController.povDown()
+            .whileTrue(new InstantCommand(() -> armExtension.set(-0.25)))
+            .whileTrue(new PrintCommand(String.valueOf(extensionLimit.getPressed())))
+            .onFalse(new InstantCommand(() -> armExtension.stopMotor()));
+
+        IOConstants.commandController.y()
+            .whileTrue(new RunCommand(() -> armRotation.set(0.2)))
+            .onFalse(new InstantCommand(() -> armRotation.stopMotor()));
+
+        IOConstants.commandController.a()
+            .whileTrue(new RunCommand(() -> armRotation.set(-0.2)))
+            .onFalse(new InstantCommand(() -> armRotation.stopMotor()));
     }
 
     /**
