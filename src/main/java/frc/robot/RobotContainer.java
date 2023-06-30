@@ -6,9 +6,9 @@ package frc.robot;
 // Swerve
 import frc.robot.subsystems.MAXSwerveModule;
 import frc.robot.subsystems.SwerveSubsystem;
-import frc.utils.commands.DoubleEvent;
 // Constants
 import frc.robot.Constants.IOConstants;
+import frc.robot.Constants.LEDConstants;
 import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.VisionConstants;
@@ -24,7 +24,6 @@ import wildlib.LimitSwitch;
 import wildlib.PIDSparkMax;
 
 import java.util.List;
-import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 // Math
@@ -39,6 +38,8 @@ import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator;
 // Commands & DriverStation
 import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.AddressableLED;
+import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -46,9 +47,10 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
-import edu.wpi.first.wpilibj.event.BooleanEvent;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
+
+import frc.utils.commands.DoubleEvent;
+import frc.utils.commands.MotorCommand;
 // Network Tables
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.DoubleSubscriber;
@@ -73,8 +75,8 @@ public class RobotContainer {
     private final PIDSparkMax armExtension = new PIDSparkMax(IOConstants.armExtensionId, MotorType.kBrushless);
     private final PIDSparkMax armRotation = new PIDSparkMax(IOConstants.armRotationId, MotorType.kBrushless);
     private final LimitSwitch extensionLimit = new LimitSwitch(0);
-    // private final PIDSparkMax grabberRotation = new PIDSparkMax(IOConstants.grabberRotationId, MotorType.kBrushless);
-    // private final PIDSparkMax grabberContraction = new PIDSparkMax(IOConstants.grabberContractionId, MotorType.kBrushless);
+    private final PIDSparkMax grabberRotation = new PIDSparkMax(IOConstants.grabberRotationId, MotorType.kBrushless);
+    private final PIDSparkMax grabberContraction = new PIDSparkMax(IOConstants.grabberContractionId, MotorType.kBrushless);
     
     private final NetworkTable limelight = NetworkTableInstance.getDefault().getTable("limelight");
     private final DoubleSubscriber targetOffsetHorizontal = limelight.getDoubleTopic("tx").subscribe(0.0);
@@ -100,22 +102,20 @@ public class RobotContainer {
 
     private static final double COLLISION_THRESHOLD = 0.5;
 
+    private AddressableLED leds;
+    private AddressableLEDBuffer ledBuffer;
+
     /** The container for the robot. Contains subsystems, IO devices, and commands. */
     public RobotContainer() {
-        // Configure the button bindings
         configureButtonBindings();
+        configureMotors();
+        // configureLEDs();
 
         new DoubleEvent(navxJerkX, (double jerk) -> Math.abs(jerk) > COLLISION_THRESHOLD)
             .onTrue(new InstantCommand(() -> IOConstants.controller.setRumble(RumbleType.kBothRumble, 1.0)));
 
         new DoubleEvent(navxJerkY, (double jerk) -> Math.abs(jerk) > COLLISION_THRESHOLD)
-            .onTrue(new InstantCommand(() -> IOConstants.controller.setRumble(RumbleType.kBothRumble, 1.0)));
-
-        armExtension.addLimitSwitch(extensionLimit, SoftLimitDirection.kReverse);
-        armExtension.setInverted(true);
-
-        armExtension.setIdleMode(IdleMode.kBrake);
-        armRotation.setIdleMode(IdleMode.kBrake);
+            .onTrue(new InstantCommand(() -> IOConstants.controller.setRumble(RumbleType.kBothRumble, Math.copySign(1.0, navxJerkY.getAsDouble()))));
 
         // Drive based on joystick input when no other command is running.
         drive.setDefaultCommand(
@@ -167,29 +167,74 @@ public class RobotContainer {
 
         IOConstants.commandController.rightBumper().onTrue(new InstantCommand(() -> System.out.println(navx.getAngle())));
         IOConstants.commandController.back().onTrue(new InstantCommand(() -> {
-            System.out.println("Zeroing ");
+            System.out.println("Zeroing NavX Micro");
             navx.zeroYaw();
         }));
 
-        // IOConstants.commandController.povRight().whileTrue(new RunCommand(() -> grabberContraction.setMotor(0.5)));
-        // IOConstants.commandController.povLeft().whileTrue(new RunCommand(() -> grabberContraction.setMotor(-0.5)));
+        IOConstants.commandController.povRight()
+            .onTrue(new InstantCommand(() -> grabberContraction.set(0.5)))
+            .onFalse(new InstantCommand(() -> grabberContraction.stopMotor()));
+
+        IOConstants.commandController.povLeft()
+            .onTrue(new InstantCommand(() -> grabberContraction.set(-0.5)))
+            .onFalse(new InstantCommand(() -> grabberContraction.stopMotor()));
             
         IOConstants.commandController.povUp()
-            .whileTrue(new RunCommand(() -> armExtension.set(0.25)))
-            .onFalse(new RunCommand(() -> armExtension.stopMotor()));
+            .onTrue(new InstantCommand(() -> armExtension.set(0.25)))
+            .onFalse(new InstantCommand(() -> armExtension.stopMotor()));
 
         IOConstants.commandController.povDown()
-            .whileTrue(new InstantCommand(() -> armExtension.set(-0.25)))
-            .whileTrue(new PrintCommand(String.valueOf(extensionLimit.getPressed())))
+            .whileTrue(new RunCommand(() -> {
+                armExtension.set(-0.25);
+                System.out.println(extensionLimit.getPressed());
+            }))
             .onFalse(new InstantCommand(() -> armExtension.stopMotor()));
 
         IOConstants.commandController.y()
-            .whileTrue(new RunCommand(() -> armRotation.set(0.2)))
+            .onTrue(new InstantCommand(() -> armRotation.set(0.2)))
             .onFalse(new InstantCommand(() -> armRotation.stopMotor()));
 
         IOConstants.commandController.a()
-            .whileTrue(new RunCommand(() -> armRotation.set(-0.2)))
+            .onTrue(new InstantCommand(() -> armRotation.set(-0.2)))
             .onFalse(new InstantCommand(() -> armRotation.stopMotor()));
+    }
+
+    private void configureMotors() {
+        // Grabber Rotation
+        grabberRotation.enableSoftLimit(SoftLimitDirection.kReverse, true);
+        grabberRotation.enableSoftLimit(SoftLimitDirection.kForward, true);
+
+        grabberRotation.setSoftLimit(SoftLimitDirection.kReverse, -2);
+        grabberRotation.setSoftLimit(SoftLimitDirection.kForward, 6);
+
+        // Grabber Contraction
+        grabberContraction.enableSoftLimit(SoftLimitDirection.kForward, true);
+        grabberContraction.enableSoftLimit(SoftLimitDirection.kReverse, true);
+
+        grabberContraction.setSoftLimit(SoftLimitDirection.kReverse, -30);
+        grabberContraction.setSoftLimit(SoftLimitDirection.kForward, 150);
+
+        // Arm Rotation
+        armRotation.enableSoftLimit(SoftLimitDirection.kReverse, true);
+        armRotation.setSoftLimit(SoftLimitDirection.kReverse, 0);
+        armRotation.setInverted(true);
+        armRotation.setIdleMode(IdleMode.kBrake);
+
+        // Arm Extension
+        armExtension.addLimitSwitch(extensionLimit, SoftLimitDirection.kReverse);
+        armExtension.setInverted(true);
+
+        armExtension.setIdleMode(IdleMode.kBrake);
+    }
+
+    private void configureLEDs() {
+        leds = new AddressableLED(IOConstants.ledPort);
+
+        ledBuffer = new AddressableLEDBuffer(LEDConstants.length);
+        leds.setLength(LEDConstants.length);
+
+        leds.setData(ledBuffer);
+        leds.start();
     }
 
     /**

@@ -189,6 +189,8 @@ public final class Constants {
         public static final int grabberRotationId = 13;
         /** Spark Max CAN ID for the grabber contraction. */
         public static final int grabberContractionId = 14;
+        /** PWM port for the addressable LEDs. */
+        public static final int ledPort = 9;
     }
 
     /** Various motor constants taken from datasheets. */
@@ -245,4 +247,8 @@ public final class Constants {
         public static final double leftFOV = 30.015;
     }
 
+    /** Constants used for addressable LEDs */
+    public static final class LEDConstants {
+        public static final int length = 60;
+    }
 }
