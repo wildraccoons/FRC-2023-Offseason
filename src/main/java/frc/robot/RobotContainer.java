@@ -191,11 +191,11 @@ public class RobotContainer {
             .onFalse(new InstantCommand(() -> armExtension.stopMotor()));
 
         IOConstants.commandController.y()
-            .onTrue(new InstantCommand(() -> armRotation.set(0.2)))
+            .onTrue(new InstantCommand(() -> armRotation.set(-0.2)))
             .onFalse(new InstantCommand(() -> armRotation.stopMotor()));
 
         IOConstants.commandController.a()
-            .onTrue(new InstantCommand(() -> armRotation.set(-0.2)))
+            .onTrue(new InstantCommand(() -> armRotation.set(0.2)))
             .onFalse(new InstantCommand(() -> armRotation.stopMotor()));
     }
 
@@ -222,6 +222,7 @@ public class RobotContainer {
 
         // Arm Extension
         armExtension.addLimitSwitch(extensionLimit, SoftLimitDirection.kReverse);
+        armExtension.enableLimitSwitch(true, SoftLimitDirection.kReverse);
         armExtension.setInverted(true);
 
         armExtension.setIdleMode(IdleMode.kBrake);

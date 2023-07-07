@@ -139,18 +139,8 @@ public class PIDSparkMax extends CANSparkMax {
         if ((!checkForward || speed < 0) && (!checkBackward || speed > 0)) {
             super.set(speed);
         } else {
-            this.disable();
+            this.stopMotor();
         }
-    }
-    
-    /** 
-     * Stops motor movement. Motor can be moved again by calling
-     * {@link #set(double) setMotor()} without having to re-enable the motor.
-     * <br><br>
-     * May be overriden by the PID reference. 
-     */
-    public void stopMotor() {
-        super.stopMotor();
     }
 
     /** 
@@ -168,13 +158,13 @@ public class PIDSparkMax extends CANSparkMax {
             if ((checkForward && value >= this.encoder.getPosition()) || (checkBackward && value <= this.encoder.getPosition())) {
                 this.controller.setReference(0, ControlType.kVelocity);
             } else {
-                this.disable();
+                this.stopMotor();
             }
         case kVelocity:
             if ((!checkForward || value < 0) && (!checkBackward || value > 0)) {
                 this.controller.setReference(value, ctrl);
             } else {
-                this.disable();
+                this.stopMotor();
             }
         default:
             this.controller.setReference(value, ctrl);
@@ -238,26 +228,5 @@ public class PIDSparkMax extends CANSparkMax {
      */
     public double getVelocity() {
         return this.encoder.getVelocity();
-    }
-    
-    /**
-     * Writes all settings to flash.
-     * @return {@link REVLibError#kOk} if successful
-     */
-    public REVLibError burnFlash() {
-        return super.burnFlash();
-    }
-
-    /**
-     * Clears all sticky faults.
-     * @return {@link REVLibError#kOk} if successful
-     */
-    public REVLibError clearFaults() {
-        return super.clearFaults();
-    }
-
-    /** Common interface for disabling a motor. */
-    public void disable() {
-        super.disable();
     }
 }
