@@ -2,7 +2,9 @@ package frc.utils.commands;
 
 import java.util.function.DoubleSupplier;
 
+import edu.wpi.first.wpilibj.event.BooleanEvent;
 import edu.wpi.first.wpilibj.event.EventLoop;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 /**
@@ -15,7 +17,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * This class extends {@link Trigger} and implements {@link DoubleEvent}
  * for ease of use with WPILib's Command paradigm.
  */
-public class DoubleEvent extends Trigger {
+public class DoubleEvent extends BooleanEvent {
     /** A check to run on a supplied value. */
     public interface Check {
         /**
@@ -43,6 +45,6 @@ public class DoubleEvent extends Trigger {
      * @param check The check to run on the signal to determine whether or not to trigger an event.
      */
     public DoubleEvent(DoubleSupplier signal, Check check) {
-        super(() -> check.check(signal.getAsDouble()));
+        super(CommandScheduler.getInstance().getDefaultButtonLoop(), () -> check.check(signal.getAsDouble()));
     }
 }

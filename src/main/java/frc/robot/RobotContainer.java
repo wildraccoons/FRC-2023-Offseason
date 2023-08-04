@@ -3,9 +3,11 @@
 // the WPILib BSD license file in the root directory of this project.
 
 package frc.robot;
-// Swerve
-import frc.robot.subsystems.MAXSwerveModule;
-import frc.robot.subsystems.SwerveSubsystem;
+
+// Subsystems
+import frc.robot.subsystems.drive.MAXSwerveModule;
+import frc.robot.subsystems.drive.SwerveSubsystem;
+
 // Constants
 import frc.robot.Constants.IOConstants;
 import frc.robot.Constants.LEDConstants;
@@ -42,13 +44,15 @@ import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.event.BooleanEvent;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
-
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.utils.commands.DoubleEvent;
 import frc.utils.commands.MotorCommand;
 // Network Tables
@@ -74,7 +78,7 @@ public class RobotContainer {
 
     private final PIDSparkMax armExtension = new PIDSparkMax(IOConstants.armExtensionId, MotorType.kBrushless);
     private final PIDSparkMax armRotation = new PIDSparkMax(IOConstants.armRotationId, MotorType.kBrushless);
-    private final LimitSwitch extensionLimit = new LimitSwitch(0);
+    private final LimitSwitch extensionLimit = new LimitSwitch(0, LimitSwitch.Polarity.NormallyClosed);
     private final PIDSparkMax grabberRotation = new PIDSparkMax(IOConstants.grabberRotationId, MotorType.kBrushless);
     private final PIDSparkMax grabberContraction = new PIDSparkMax(IOConstants.grabberContractionId, MotorType.kBrushless);
     
@@ -83,6 +87,8 @@ public class RobotContainer {
 
     private double previousAccelX = 0.0;
     private double previousAccelY = 0.0;
+
+    private Trigger extensionController;
 
     DoubleSupplier navxJerkX = () -> {
         double currentAccelX = navx.getWorldLinearAccelX();
@@ -100,6 +106,10 @@ public class RobotContainer {
         return jerkY;
     };
 
+    DoubleSupplier rightY = () -> {
+        return -IOConstants.commandController.getRightY();
+    };
+
     private static final double COLLISION_THRESHOLD = 0.5;
 
     private AddressableLED leds;
@@ -112,9 +122,11 @@ public class RobotContainer {
         // configureLEDs();
 
         new DoubleEvent(navxJerkX, (double jerk) -> Math.abs(jerk) > COLLISION_THRESHOLD)
+            .castTo(Trigger::new)
             .onTrue(new InstantCommand(() -> IOConstants.controller.setRumble(RumbleType.kBothRumble, 1.0)));
 
         new DoubleEvent(navxJerkY, (double jerk) -> Math.abs(jerk) > COLLISION_THRESHOLD)
+            .castTo(Trigger::new)
             .onTrue(new InstantCommand(() -> IOConstants.controller.setRumble(RumbleType.kBothRumble, Math.copySign(1.0, navxJerkY.getAsDouble()))));
 
         // Drive based on joystick input when no other command is running.
@@ -144,6 +156,7 @@ public class RobotContainer {
      * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
      */
     private void configureButtonBindings() {
+
         IOConstants.commandController.x()
             .whileTrue(new RunCommand( // Use whileTrue instead of onTrue to prevent the default command from running
                 () -> drive.crossWheels(), 
@@ -166,7 +179,7 @@ public class RobotContainer {
             ));
 
         IOConstants.commandController.rightBumper().onTrue(new InstantCommand(() -> System.out.println(navx.getAngle())));
-        IOConstants.commandController.back().onTrue(new InstantCommand(() -> {
+        IOConstants.commandController.start().onTrue(new InstantCommand(() -> {
             System.out.println("Zeroing NavX Micro");
             navx.zeroYaw();
         }));
@@ -179,15 +192,17 @@ public class RobotContainer {
             .onTrue(new InstantCommand(() -> grabberContraction.set(-0.5)))
             .onFalse(new InstantCommand(() -> grabberContraction.stopMotor()));
             
-        IOConstants.commandController.povUp()
-            .onTrue(new InstantCommand(() -> armExtension.set(0.25)))
-            .onFalse(new InstantCommand(() -> armExtension.stopMotor()));
+            IOConstants.commandController.povUp()
+            .onTrue(new InstantCommand(() -> grabberRotation.set(-0.2)))
+            .onFalse(new InstantCommand(() -> grabberRotation.stopMotor()));
 
         IOConstants.commandController.povDown()
-            .whileTrue(new RunCommand(() -> {
-                armExtension.set(-0.25);
-                System.out.println(extensionLimit.getPressed());
-            }))
+            .onTrue(new InstantCommand(() -> grabberRotation.set(0.2)))
+            .onFalse(new InstantCommand(() -> grabberRotation.stopMotor()));
+
+        new DoubleEvent(rightY, (y) -> y >= 0.05 || y <= -0.05)
+            .castTo(Trigger::new)
+            .whileTrue(new RunCommand(() -> armExtension.set(rightY.getAsDouble() * 0.3)))
             .onFalse(new InstantCommand(() -> armExtension.stopMotor()));
 
         IOConstants.commandController.y()

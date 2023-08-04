@@ -139,7 +139,7 @@ public class PIDSparkMax extends CANSparkMax {
         if ((!checkForward || speed < 0) && (!checkBackward || speed > 0)) {
             super.set(speed);
         } else {
-            this.stopMotor();
+            super.set(0);
         }
     }
 
