@@ -119,7 +119,7 @@ public class RobotContainer {
     public RobotContainer() {
         configureButtonBindings();
         configureMotors();
-        // configureLEDs();
+        configureLEDs();
 
         new DoubleEvent(navxJerkX, (double jerk) -> Math.abs(jerk) > COLLISION_THRESHOLD)
             .castTo(Trigger::new)
@@ -247,6 +247,9 @@ public class RobotContainer {
         leds = new AddressableLED(IOConstants.ledPort);
 
         ledBuffer = new AddressableLEDBuffer(LEDConstants.length);
+        for (var i = 0; i < LEDConstants.length; i++) {
+            ledBuffer.setRGB(i, 255, 0, 255);
+        }
         leds.setLength(LEDConstants.length);
 
         leds.setData(ledBuffer);
