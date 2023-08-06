@@ -54,11 +54,11 @@ public final class Constants {
         public static final double maxAngularSpeed = Math.PI;
 
         /** Maximum speed at which the translation vector direction ({@code Math.atan2(y, x)}) can change. Measured in rads/s. */
-        public static final double directionSlewRate = Math.PI;
+        public static final double directionSlewRate = 1.4; // TODO: Tune direction slew rate
         /** Maximum speed at which the translation vector magnitude ({@code Math.sqrt(x*x + y*y)}) can change. Measured in percent/s (1 = 100%). */
-        public static final double magnitudeSlewRate = 1.8;
+        public static final double magnitudeSlewRate = 1.0; // TODO: Tune magnitude slew rate
         /** Maximum speed at which the rotation vector magnitude can change. Measured in percent/s (1 = 100%). */
-        public static final double rotationalSlewRate = 2.0;
+        public static final double rotationalSlewRate = 1.0; // TODO: Tune rotational slew rate
 
         /** Used to invert the gyroscope direction. */
         public static final boolean gyroReversed = true;
