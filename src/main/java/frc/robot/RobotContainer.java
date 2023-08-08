@@ -44,7 +44,6 @@ import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
@@ -87,8 +86,6 @@ public class RobotContainer {
 
     private double previousAccelX = 0.0;
     private double previousAccelY = 0.0;
-
-    private Trigger extensionController;
 
     DoubleSupplier navxJerkX = () -> {
         double currentAccelX = navx.getWorldLinearAccelX();
