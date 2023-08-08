@@ -177,8 +177,10 @@ public class RobotContainer {
 
         IOConstants.commandController.rightBumper().onTrue(new InstantCommand(() -> System.out.println(navx.getAngle())));
         IOConstants.commandController.start().onTrue(new InstantCommand(() -> {
-            System.out.println("Zeroing NavX Micro");
+            System.out.println("Zeroing");
             navx.zeroYaw();
+            grabberContraction.setEncoderPosition(0.0);
+            grabberRotation.setEncoderPosition(0.0);
         }));
 
         IOConstants.commandController.povRight()
