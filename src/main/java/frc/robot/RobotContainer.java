@@ -6,18 +6,19 @@ package frc.robot;
 
 // Subsystems
 import frc.robot.subsystems.drive.MAXSwerveModule;
-import frc.robot.subsystems.drive.SwerveSubsystem;
-
+import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.drive.MAXSwerveModule.ModuleLabel;
 // Constants
 import frc.robot.Constants.IOConstants;
 import frc.robot.Constants.LEDConstants;
 import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.VisionConstants;
-// Navx-micro
-import edu.wpi.first.wpilibj.I2C;
+
 import com.kauailabs.navx.frc.AHRS;
+import com.revrobotics.SparkMaxLimitSwitch;
 // Motors
+import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMax.SoftLimitDirection;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
@@ -50,13 +51,20 @@ import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.event.BooleanEvent;
+import edu.wpi.first.wpilibj.livewindow.LiveWindow;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.utils.commands.DoubleEvent;
 import frc.utils.commands.MotorCommand;
+import frc.utils.ds.DoubleInput;
 // Network Tables
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
+import edu.wpi.first.networktables.DoubleTopic;
+import edu.wpi.first.networktables.GenericSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 
 /**
@@ -66,18 +74,12 @@ import edu.wpi.first.networktables.NetworkTable;
  * subsystems, commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-    private final AHRS navx = navxInit();
-
-    private final SwerveSubsystem drive = new SwerveSubsystem(DriveConstants.wheelBase, DriveConstants.trackWidth, navx,
-        new MAXSwerveModule(IOConstants.aPowerId, IOConstants.aRotationId, DriveConstants.aAngularOffset),
-        new MAXSwerveModule(IOConstants.bPowerId, IOConstants.bRotationId, DriveConstants.bAngularOffset),
-        new MAXSwerveModule(IOConstants.cPowerId, IOConstants.cRotationId, DriveConstants.cAngularOffset),
-        new MAXSwerveModule(IOConstants.dPowerId, IOConstants.dRotationId, DriveConstants.dAngularOffset)
-    );
+    private final Drive drive = Drive.getInstance();
+    private final AHRS navx = drive.getNavx();
 
     private final PIDSparkMax armExtension = new PIDSparkMax(IOConstants.armExtensionId, MotorType.kBrushless);
     private final PIDSparkMax armRotation = new PIDSparkMax(IOConstants.armRotationId, MotorType.kBrushless);
-    private final LimitSwitch extensionLimit = new LimitSwitch(0, LimitSwitch.Polarity.NormallyClosed);
+    private final SparkMaxLimitSwitch extensionLimit = armExtension.getReverseLimitSwitch(SparkMaxLimitSwitch.Type.kNormallyClosed);
     private final PIDSparkMax grabberRotation = new PIDSparkMax(IOConstants.grabberRotationId, MotorType.kBrushless);
     private final PIDSparkMax grabberContraction = new PIDSparkMax(IOConstants.grabberContractionId, MotorType.kBrushless);
     
@@ -112,11 +114,15 @@ public class RobotContainer {
     private AddressableLED leds;
     private AddressableLEDBuffer ledBuffer;
 
+    private GenericSubscriber extension;
+    private DoubleInput testInput;
+
     /** The container for the robot. Contains subsystems, IO devices, and commands. */
     public RobotContainer() {
         configureButtonBindings();
         configureMotors();
         configureLEDs();
+        configureDashboard();
 
         new DoubleEvent(navxJerkX, (double jerk) -> Math.abs(jerk) > COLLISION_THRESHOLD)
             .castTo(Trigger::new)
@@ -160,6 +166,16 @@ public class RobotContainer {
                 drive
             ));
 
+        IOConstants.commandController.b()
+            .onTrue(new InstantCommand(() -> {
+                System.out.println("Grabber Contraction: " + grabberContraction.getPosition());
+                System.out.println("Grabber Rotation: " + grabberRotation.getPosition());
+                System.out.println("Arm Extension: " + armExtension.getPosition());
+                System.out.println("Arm Rotation: " + armRotation.getPosition());
+
+                System.out.println("Test Input: " + testInput.get());
+            }));
+
         IOConstants.commandController
             .leftTrigger()
             .whileTrue(new RunCommand(
@@ -192,7 +208,7 @@ public class RobotContainer {
             .onFalse(new InstantCommand(() -> grabberContraction.stopMotor()));
             
             IOConstants.commandController.povUp()
-            .onTrue(new InstantCommand(() -> grabberRotation.set(-0.2)))
+            .onTrue(new InstantCommand(() -> grabberRotation.set(-0.05)))
             .onFalse(new InstantCommand(() -> grabberRotation.stopMotor()));
 
         IOConstants.commandController.povDown()
@@ -201,8 +217,13 @@ public class RobotContainer {
 
         new DoubleEvent(rightY, (y) -> y >= 0.05 || y <= -0.05)
             .castTo(Trigger::new)
-            .whileTrue(new RunCommand(() -> armExtension.set(rightY.getAsDouble() * 0.3)))
-            .onFalse(new InstantCommand(() -> armExtension.stopMotor()));
+            .onTrue(new InstantCommand(() -> armExtension.set(rightY.getAsDouble() * 0.3)))
+            .onFalse(new InstantCommand(() -> {
+                armExtension.stopMotor();
+                if (extensionLimit.isPressed()) {
+                    armExtension.setEncoderPosition(0.0);
+                }
+            }));
 
         IOConstants.commandController.y()
             .onTrue(new InstantCommand(() -> armRotation.set(-0.2)))
@@ -211,6 +232,10 @@ public class RobotContainer {
         IOConstants.commandController.a()
             .onTrue(new InstantCommand(() -> armRotation.set(0.2)))
             .onFalse(new InstantCommand(() -> armRotation.stopMotor()));
+
+        IOConstants.commandController.back()
+            .onTrue(new RunCommand(() -> armExtension.setReference(extension.getDouble(10.0), ControlType.kPosition)))
+            .onFalse(new InstantCommand(() -> { if (extensionLimit.isPressed()) { armExtension.setEncoderPosition(0.0); } }));
     }
 
     private void configureMotors() {
@@ -235,8 +260,9 @@ public class RobotContainer {
         armRotation.setIdleMode(IdleMode.kBrake);
 
         // Arm Extension
-        armExtension.addLimitSwitch(extensionLimit, SoftLimitDirection.kReverse);
-        armExtension.enableLimitSwitch(true, SoftLimitDirection.kReverse);
+        
+        armExtension.setMaxOutput(0.25);
+        armExtension.setMinOutput(-0.25);
         armExtension.setInverted(true);
 
         armExtension.setIdleMode(IdleMode.kBrake);
@@ -253,6 +279,20 @@ public class RobotContainer {
 
         leds.setData(ledBuffer);
         leds.start();
+    }
+
+    private void configureDashboard() {
+        SmartDashboard.putNumber("Extension", 10.0);
+        extension = SmartDashboard.getEntry("Extension").getTopic().genericSubscribe();
+
+        RunCommand cross = new RunCommand(() -> {
+            drive.crossWheels();
+        }, drive);
+
+        SmartDashboard.putData("Cross Wheels", cross);
+
+        testInput = new DoubleInput("Test Input", 10.0);
+        System.out.println(testInput.get());
     }
 
     /**
@@ -299,20 +339,5 @@ public class RobotContainer {
 
         // Run the command, then stop.
         return swerveControllerCommand.andThen(() -> drive.drive(0, 0, 0, false, false));
-    }
-
-    /**
-     * Tries to initialize the a NavX on the MXP I2C port.
-     * 
-     * @return The {@code AHRS} object for the NavX.
-     *         Returns {@code null} if there is an error during instantiation.
-     */
-    private AHRS navxInit() {
-        try {
-            return new AHRS(I2C.Port.kOnboard);
-        } catch (RuntimeException ex) {
-            DriverStation.reportError("Error instantiating mavX-micro: " + ex.getMessage(), true);
-            return null;
-        }
     }
 }

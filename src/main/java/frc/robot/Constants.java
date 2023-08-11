@@ -30,14 +30,16 @@ public final class Constants {
     public static final class DriveConstants {
         /** 
          * Distance between centers of front and back wheels on drivetrain. 
-         * Explained in more detail in {@link frc.robot.subsystems.drive.SwerveSubsystem#SwerveSubsystem(double, double, edu.wpi.first.wpilibj.interfaces.Gyro, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule) <code>new frc.robot.subsystems.SwerveSubsystem()</code>}
+         * Explained in more detail in {@link frc.robot.subsystems.drive.Drive#SwerveSubsystem(double, double, edu.wpi.first.wpilibj.interfaces.Gyro, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule) <code>new frc.robot.subsystems.SwerveSubsystem()</code>}
          */
         public static final double wheelBase = Units.inchesToMeters(26.5); // Meters (m)
         /** 
          * Distance between centers of right and left wheels on drivetrain.
-         * Explained in more detail in {@link frc.robot.subsystems.drive.SwerveSubsystem#SwerveSubsystem(double, double, edu.wpi.first.wpilibj.interfaces.Gyro, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule) <code>new frc.robot.subsystems.SwerveSubsystem()</code>}
+         * Explained in more detail in {@link frc.robot.subsystems.drive.Drive#SwerveSubsystem(double, double, edu.wpi.first.wpilibj.interfaces.Gyro, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule) <code>new frc.robot.subsystems.SwerveSubsystem()</code>}
          */
         public static final double trackWidth = Units.inchesToMeters(26.5); // Meters (m)
+
+
 
         /** Angular offset of module A (in rads). */
         public static final double aAngularOffset = -Math.PI/2;
@@ -47,6 +49,8 @@ public final class Constants {
         public static final double cAngularOffset = Math.PI;
         /** Angular offset of module D (in rads). */
         public static final double dAngularOffset = Math.PI/2;
+        /** Angular offsets of each module (in rads) */
+        public static final double[] angularOffsets = {aAngularOffset, bAngularOffset, cAngularOffset, dAngularOffset};
 
         /** Max translaitonal speed (in m/s) */
         public static final double maxTranslationalSpeed = 4.8;
@@ -54,11 +58,11 @@ public final class Constants {
         public static final double maxAngularSpeed = Math.PI;
 
         /** Maximum speed at which the translation vector direction ({@code Math.atan2(y, x)}) can change. Measured in rads/s. */
-        public static final double directionSlewRate = 1.4; // TODO: Tune direction slew rate
+        public static final double directionSlewRate = Math.PI / 2; // TODO: Tune direction slew rate
         /** Maximum speed at which the translation vector magnitude ({@code Math.sqrt(x*x + y*y)}) can change. Measured in percent/s (1 = 100%). */
         public static final double magnitudeSlewRate = 1.0; // TODO: Tune magnitude slew rate
         /** Maximum speed at which the rotation vector magnitude can change. Measured in percent/s (1 = 100%). */
-        public static final double rotationalSlewRate = 1.0; // TODO: Tune rotational slew rate
+        public static final double rotationalSlewRate = 2.0; // TODO: Tune rotational slew rate
 
         /** Used to invert the gyroscope direction. */
         public static final boolean gyroReversed = true;
@@ -190,7 +194,7 @@ public final class Constants {
         /** Spark Max CAN ID for the grabber contraction. */
         public static final int grabberContractionId = 14;
         /** PWM port for the addressable LEDs. */
-        public static final int ledPort = 9;
+        public static final int ledPort = 0;
     }
 
     /** Various motor constants taken from datasheets. */

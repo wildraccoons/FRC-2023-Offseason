@@ -1,6 +1,8 @@
 package frc.robot.subsystems.drive;
 
+import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.ModuleConstants;
+import frc.robot.subsystems.Telemetry;
 
 import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.CANSparkMax;
@@ -11,6 +13,7 @@ import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /** 
  * A wrapper for a MAXSwerve Module (wheel).
@@ -20,7 +23,15 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
  * through the wheels' axis of yaw rotation.
  */
 public class MAXSwerveModule {
+    public enum ModuleLabel {
+        A,
+        B,
+        C,
+        D,
+    }
+
     private final double angularOffset;
+    private final ModuleLabel m_label;
 
     private final CANSparkMax driveSpark;
     private final CANSparkMax turnSpark;
@@ -43,7 +54,9 @@ public class MAXSwerveModule {
      * @param turnId The CAN Id of the turning motor (NEO 550)
      * @param angularOffset Angular offset of the swerve module compared to the zero.
      */
-    public MAXSwerveModule(int driveId, int turnId, double angularOffset) {
+    public MAXSwerveModule(int driveId, int turnId, ModuleLabel moduleLabel) {
+        m_label = moduleLabel;
+
         driveSpark = new CANSparkMax(driveId, ModuleConstants.driveMotorType);
         turnSpark = new CANSparkMax(turnId, ModuleConstants.turnMotorType);
 
@@ -100,7 +113,7 @@ public class MAXSwerveModule {
         driveSpark.burnFlash();
         turnSpark.burnFlash();
 
-        this.angularOffset = angularOffset;
+        this.angularOffset = DriveConstants.angularOffsets[moduleLabel.ordinal()];
         targetState.angle = new Rotation2d(turnEncoder.getPosition());
         driveEncoder.setPosition(0);
     }
@@ -153,5 +166,13 @@ public class MAXSwerveModule {
     /** Zeros the drive encoder. */
     public void resetEncoders() {
         driveEncoder.setPosition(0);
+    }
+
+    public void outputTelemetry() {
+        SwerveModulePosition position = getPosition();
+
+        SmartDashboard.putNumber("Module " + m_label.name() + " Angle (rads)", position.angle.getRadians());
+        SmartDashboard.putNumber("Module " + m_label.name() + " Distance (m)", position.distanceMeters);
+        SmartDashboard.putNumber("Module " + m_label.name() + " Speed (m/s)", driveEncoder.getVelocity());
     }
 }

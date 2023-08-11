@@ -1,11 +1,19 @@
 package frc.robot.subsystems.drive;
 
+import frc.robot.subsystems.drive.MAXSwerveModule.ModuleLabel;
 import frc.utils.SwerveUtils;
 
 import static frc.robot.Constants.DriveConstants;
+import static frc.robot.Constants.IOConstants;
+
+import com.kauailabs.navx.frc.AHRS;
+import edu.wpi.first.wpilibj.I2C;
 
 import edu.wpi.first.util.WPIUtilJNI;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -19,11 +27,20 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 /** Control subsystem used to command a swerve drive base. */
-public class SwerveSubsystem extends SubsystemBase {
+public class Drive extends SubsystemBase {
+    private static Drive m_instance;
+    public static Drive getInstance() {
+        if (m_instance == null) {
+            m_instance = new Drive();
+        }
+
+        return m_instance;
+    }
+
     private final double base;
     private final double track;
 
-    private final Gyro gyro;
+    private final AHRS gyro;
 
     private final MAXSwerveModule aModule;
     private final MAXSwerveModule bModule;
@@ -49,6 +66,8 @@ public class SwerveSubsystem extends SubsystemBase {
 
     final SwerveDriveKinematics kinematics;
     SwerveDriveOdometry odometry;
+
+    private final Field2d m_field = new Field2d();
 
     /**
      * Creates a swerve drivetrain from the given motors and dimensions.
@@ -76,19 +95,18 @@ public class SwerveSubsystem extends SubsystemBase {
      * @param moduleC The MAXSwerve module at position C 
      * @param moduleD The MAXSwerve module at position D
      */
-    public SwerveSubsystem(double wheelBase, double trackWidth, Gyro gyro,
-        MAXSwerveModule moduleA, MAXSwerveModule moduleB,
-        MAXSwerveModule moduleC, MAXSwerveModule moduleD
-    ) {
-        base = wheelBase;
-        track = trackWidth;
+    private Drive() {
+        SmartDashboard.putData("Field", m_field);
 
-        this.gyro = gyro;
+        base = DriveConstants.wheelBase;
+        track = DriveConstants.trackWidth;
 
-        aModule = moduleA;
-        bModule = moduleB;
-        cModule = moduleC;
-        dModule = moduleD;
+        gyro = navxInit();
+
+        aModule = new MAXSwerveModule(IOConstants.aPowerId, IOConstants.aRotationId, ModuleLabel.A);
+        bModule = new MAXSwerveModule(IOConstants.bPowerId, IOConstants.bRotationId, ModuleLabel.B);
+        cModule = new MAXSwerveModule(IOConstants.cPowerId, IOConstants.cRotationId, ModuleLabel.C);
+        dModule = new MAXSwerveModule(IOConstants.dPowerId, IOConstants.dRotationId, ModuleLabel.D);
 
         aPosition = new Translation2d(this.base/2, this.track/2);
         bPosition = new Translation2d(this.base/2, -this.track/2);
@@ -120,6 +138,8 @@ public class SwerveSubsystem extends SubsystemBase {
                 dModule.getPosition()
             }
         );
+
+        m_field.setRobotPose(odometry.getPoseMeters());
     }
 
     
@@ -277,5 +297,37 @@ public class SwerveSubsystem extends SubsystemBase {
      */
     public final SwerveDriveKinematics getKinematics() {
         return kinematics;
+    }
+
+    /**
+     * Tries to initialize the a NavX on the MXP I2C port.
+     * 
+     * @return The {@code AHRS} object for the NavX.
+     *         Returns {@code null} if there is an error during instantiation.
+     */
+    private AHRS navxInit() {
+        try {
+            return new AHRS(I2C.Port.kOnboard);
+        } catch (RuntimeException ex) {
+            DriverStation.reportError("Error instantiating mavX-micro: " + ex.getMessage(), true);
+            return null;
+        }
+    }
+
+    public AHRS getNavx() {
+        return gyro;
+    }
+
+    public void outputTelemetry() {
+        aModule.outputTelemetry();
+        bModule.outputTelemetry();
+        cModule.outputTelemetry();
+        dModule.outputTelemetry();
+
+        m_field.setRobotPose(getPose());
+
+        SmartDashboard.putNumber("Drive Angle (deg)", getHeading());
+        SmartDashboard.putNumber("Drive Velocity (m/s)", Math.hypot(gyro.getVelocityX(), gyro.getVelocityY()));
+        SmartDashboard.putData("Field", m_field);
     }
 }
