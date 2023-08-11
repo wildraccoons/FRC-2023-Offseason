@@ -19,7 +19,7 @@ public class PIDSparkMax extends CANSparkMax {
     private double kMinOutput = -0.75;
 
     private RelativeEncoder encoder;
-    private SparkMaxPIDController controller;
+    private SparkMaxPIDController m_controller;
 
     private boolean limitEnabledForward = false;
     private boolean limitEnabledBackward = false;
@@ -55,16 +55,16 @@ public class PIDSparkMax extends CANSparkMax {
     public PIDSparkMax(int deviceId, MotorType type, double proportional, double integral, double derivative) {
         super(deviceId, type);
         this.encoder = super.getEncoder();
-        this.controller = super.getPIDController();
+        this.m_controller = super.getPIDController();
 
-        controller.setP(proportional);
-        controller.setI(integral);
-        controller.setD(derivative);
+        m_controller.setP(proportional);
+        m_controller.setI(integral);
+        m_controller.setD(derivative);
         
-        controller.setIZone(kIz);
-        controller.setFF(kFF);
-        controller.setOutputRange(kMinOutput, kMaxOutput);
-        controller.setFeedbackDevice(encoder);
+        m_controller.setIZone(kIz);
+        m_controller.setFF(kFF);
+        m_controller.setOutputRange(kMinOutput, kMaxOutput);
+        m_controller.setFeedbackDevice(encoder);
     }
 
     /** 
@@ -74,8 +74,8 @@ public class PIDSparkMax extends CANSparkMax {
      * setting this below zero stops the motor from rotating forwards.
      */
     public void setMaxOutput(double output) {
-        this.kMaxOutput = output;
-        this.controller.setOutputRange(this.kMinOutput, this.kMaxOutput);
+        kMaxOutput = output;
+        m_controller.setOutputRange(this.kMinOutput, this.kMaxOutput);
     }
 
     /** 
@@ -85,8 +85,12 @@ public class PIDSparkMax extends CANSparkMax {
      * setting this above zero stops the motor from rotating in reverse.
      */
     public void setMinOutput(double output) {
-        this.kMinOutput = output;
-        this.controller.setOutputRange(this.kMinOutput, this.kMaxOutput);
+        kMinOutput = output;
+        m_controller.setOutputRange(this.kMinOutput, this.kMaxOutput);
+    }
+
+    public void setReference(double value, ControlType ctrl) {
+        m_controller.setReference(value, ctrl);
     }
 
     /**
@@ -127,47 +131,8 @@ public class PIDSparkMax extends CANSparkMax {
     }
 
     /** Overwrites the current position of the motor encoder. */
-    public void setPostion(double pos) {
-        this.encoder.setPosition(pos);
-    }
-
-    @Override
-    public void set(double speed) {
-        boolean checkForward = this.limitEnabledForward && this.limitForward != null && this.limitBackward.getPressed();
-        boolean checkBackward = this.limitEnabledBackward && this.limitBackward != null && this.limitBackward.getPressed();
-        if ((!checkForward || speed < 0) && (!checkBackward || speed > 0)) {
-            super.set(speed);
-        } else {
-            super.set(0);
-        }
-    }
-
-    /** 
-     * Set the controller reference value based on the selected control mode. 
-     * 
-     * @param value The value to set depending on the control mode. For basic 
-     *              duty cycle control this should be a value between -1 and 1.
-     * @param ctrl The control type.
-     */
-    public void setReference(double value, ControlType ctrl) {
-        boolean checkForward = this.limitEnabledForward && this.limitForward != null && this.limitBackward.getPressed();
-        boolean checkBackward = this.limitEnabledBackward && this.limitBackward != null && this.limitBackward.getPressed();
-        switch (ctrl) {
-        case kPosition:
-            if ((checkForward && value >= this.encoder.getPosition()) || (checkBackward && value <= this.encoder.getPosition())) {
-                this.controller.setReference(0, ControlType.kVelocity);
-            } else {
-                this.stopMotor();
-            }
-        case kVelocity:
-            if ((!checkForward || value < 0) && (!checkBackward || value > 0)) {
-                this.controller.setReference(value, ctrl);
-            } else {
-                this.stopMotor();
-            }
-        default:
-            this.controller.setReference(value, ctrl);
-        }
+    public void setTargetPostion(double pos) {
+        m_controller.setReference(pos, ControlType.kPosition);
     }
 
     /** Sets the encoder position to 0 if the specified limit switch is pressed. */
