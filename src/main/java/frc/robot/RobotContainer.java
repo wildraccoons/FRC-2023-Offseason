@@ -5,30 +5,24 @@
 package frc.robot;
 
 // Subsystems
-import frc.robot.subsystems.drive.MAXSwerveModule;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.drive.MAXSwerveModule.ModuleLabel;
+import frc.robot.subsystems.Arm;
+import frc.robot.subsystems.Claw;
+import frc.robot.subsystems.LEDs;
 // Constants
 import frc.robot.Constants.IOConstants;
 import frc.robot.Constants.LEDConstants;
 import frc.robot.Constants.AutoConstants;
-import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.VisionConstants;
+// Wildlib
+import wildlib.utils.commands.DoubleEvent;
+import wildlib.utils.ds.DoubleInput;
 
-import com.kauailabs.navx.frc.AHRS;
-import com.revrobotics.SparkMaxLimitSwitch;
-// Motors
-import com.revrobotics.CANSparkMax.ControlType;
-import com.revrobotics.CANSparkMax.IdleMode;
-import com.revrobotics.CANSparkMax.SoftLimitDirection;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
-
-import wildlib.LimitSwitch;
-import wildlib.PIDSparkMax;
-
+// Std
 import java.util.List;
 import java.util.function.DoubleSupplier;
-
+// Navx-micro
+import com.kauailabs.navx.frc.AHRS;
 // Math
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
@@ -39,31 +33,24 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator;
-// Commands & DriverStation
+// WPILib
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.DriverStation.MatchType;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
-import edu.wpi.first.wpilibj.event.BooleanEvent;
-import edu.wpi.first.wpilibj.livewindow.LiveWindow;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.utils.commands.DoubleEvent;
-import frc.utils.commands.MotorCommand;
-import frc.utils.ds.DoubleInput;
 // Network Tables
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
-import edu.wpi.first.networktables.DoubleTopic;
 import edu.wpi.first.networktables.GenericSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 
@@ -74,14 +61,12 @@ import edu.wpi.first.networktables.NetworkTable;
  * subsystems, commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-    private final Drive drive = Drive.getInstance();
-    private final AHRS navx = drive.getNavx();
+    private static final Drive drive = Drive.getInstance();
+    private static final Arm arm = Arm.getInstance();
+    private static final Claw claw = Claw.getInstance();
+    private static final LEDs leds = LEDs.getInstance();
 
-    private final PIDSparkMax armExtension = new PIDSparkMax(IOConstants.armExtensionId, MotorType.kBrushless);
-    private final PIDSparkMax armRotation = new PIDSparkMax(IOConstants.armRotationId, MotorType.kBrushless);
-    private final SparkMaxLimitSwitch extensionLimit = armExtension.getReverseLimitSwitch(SparkMaxLimitSwitch.Type.kNormallyClosed);
-    private final PIDSparkMax grabberRotation = new PIDSparkMax(IOConstants.grabberRotationId, MotorType.kBrushless);
-    private final PIDSparkMax grabberContraction = new PIDSparkMax(IOConstants.grabberContractionId, MotorType.kBrushless);
+    private static final AHRS navx = drive.getNavx();
     
     private final NetworkTable limelight = NetworkTableInstance.getDefault().getTable("limelight");
     private final DoubleSubscriber targetOffsetHorizontal = limelight.getDoubleTopic("tx").subscribe(0.0);
@@ -111,26 +96,24 @@ public class RobotContainer {
 
     private static final double COLLISION_THRESHOLD = 0.5;
 
-    private AddressableLED leds;
-    private AddressableLEDBuffer ledBuffer;
-
     private GenericSubscriber extension;
     private DoubleInput testInput;
 
     /** The container for the robot. Contains subsystems, IO devices, and commands. */
     public RobotContainer() {
+        // We don't really need all this extra telemetry in a comp match.
+        MatchType match = DriverStation.getMatchType();
+        if (match == MatchType.None || match == MatchType.Practice) {
+            initTelemetry(new SubsystemBase[] {
+                drive,
+                arm,
+                claw,
+            });
+        }
+
         configureButtonBindings();
-        configureMotors();
-        configureLEDs();
         configureDashboard();
-
-        new DoubleEvent(navxJerkX, (double jerk) -> Math.abs(jerk) > COLLISION_THRESHOLD)
-            .castTo(Trigger::new)
-            .onTrue(new InstantCommand(() -> IOConstants.controller.setRumble(RumbleType.kBothRumble, 1.0)));
-
-        new DoubleEvent(navxJerkY, (double jerk) -> Math.abs(jerk) > COLLISION_THRESHOLD)
-            .castTo(Trigger::new)
-            .onTrue(new InstantCommand(() -> IOConstants.controller.setRumble(RumbleType.kBothRumble, Math.copySign(1.0, navxJerkY.getAsDouble()))));
+        configureRumble();
 
         // Drive based on joystick input when no other command is running.
         drive.setDefaultCommand(
@@ -159,22 +142,11 @@ public class RobotContainer {
      * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
      */
     private void configureButtonBindings() {
-
         IOConstants.commandController.x()
             .whileTrue(new RunCommand( // Use whileTrue instead of onTrue to prevent the default command from running
                 () -> drive.crossWheels(), 
                 drive
             ));
-
-        IOConstants.commandController.b()
-            .onTrue(new InstantCommand(() -> {
-                System.out.println("Grabber Contraction: " + grabberContraction.getPosition());
-                System.out.println("Grabber Rotation: " + grabberRotation.getPosition());
-                System.out.println("Arm Extension: " + armExtension.getPosition());
-                System.out.println("Arm Rotation: " + armRotation.getPosition());
-
-                System.out.println("Test Input: " + testInput.get());
-            }));
 
         IOConstants.commandController
             .leftTrigger()
@@ -193,92 +165,49 @@ public class RobotContainer {
 
         IOConstants.commandController.rightBumper().onTrue(new InstantCommand(() -> System.out.println(navx.getAngle())));
         IOConstants.commandController.start().onTrue(new InstantCommand(() -> {
-            System.out.println("Zeroing");
+            System.out.println("Zeroing sensors");
             navx.zeroYaw();
-            grabberContraction.setEncoderPosition(0.0);
-            grabberRotation.setEncoderPosition(0.0);
+            claw.zeroSensors();
         }));
 
         IOConstants.commandController.povRight()
-            .onTrue(new InstantCommand(() -> grabberContraction.set(0.5)))
-            .onFalse(new InstantCommand(() -> grabberContraction.stopMotor()));
+            .onTrue(new InstantCommand(() -> claw.setContraction(0.5), claw))
+            .onFalse(new InstantCommand(() -> claw.stopContraction(), claw));
 
         IOConstants.commandController.povLeft()
-            .onTrue(new InstantCommand(() -> grabberContraction.set(-0.5)))
-            .onFalse(new InstantCommand(() -> grabberContraction.stopMotor()));
+            .onTrue(new InstantCommand(() -> claw.setContraction(-0.5), claw))
+            .onFalse(new InstantCommand(() -> claw.stopContraction(), claw));
             
             IOConstants.commandController.povUp()
-            .onTrue(new InstantCommand(() -> grabberRotation.set(-0.05)))
-            .onFalse(new InstantCommand(() -> grabberRotation.stopMotor()));
+            .onTrue(new InstantCommand(() -> claw.setRotation(-0.05), claw))
+            .onFalse(new InstantCommand(() -> claw.holdRotation(), claw));
 
         IOConstants.commandController.povDown()
-            .onTrue(new InstantCommand(() -> grabberRotation.set(0.2)))
-            .onFalse(new InstantCommand(() -> grabberRotation.stopMotor()));
+            .onTrue(new InstantCommand(() -> claw.setRotation(0.2), claw))
+            .onFalse(new InstantCommand(() -> claw.holdRotation(), claw));
 
         new DoubleEvent(rightY, (y) -> y >= 0.05 || y <= -0.05)
             .castTo(Trigger::new)
-            .onTrue(new InstantCommand(() -> armExtension.set(rightY.getAsDouble() * 0.3)))
+            .onTrue(new InstantCommand(() -> arm.setExtension(rightY.getAsDouble() * 0.3), arm))
             .onFalse(new InstantCommand(() -> {
-                armExtension.stopMotor();
-                if (extensionLimit.isPressed()) {
-                    armExtension.setEncoderPosition(0.0);
-                }
-            }));
+                arm.holdExtension();
+                arm.zeroLimit();
+            }, arm));
 
         IOConstants.commandController.y()
-            .onTrue(new InstantCommand(() -> armRotation.set(-0.2)))
-            .onFalse(new InstantCommand(() -> armRotation.stopMotor()));
+            .onTrue(new InstantCommand(() -> arm.setRotation(-0.2), arm))
+            .onFalse(new InstantCommand(() -> arm.holdRotation(), arm));
 
         IOConstants.commandController.a()
-            .onTrue(new InstantCommand(() -> armRotation.set(0.2)))
-            .onFalse(new InstantCommand(() -> armRotation.stopMotor()));
+            .onTrue(new InstantCommand(() -> arm.setRotation(0.2), arm))
+            .onFalse(new InstantCommand(() -> arm.holdRotation(), arm));
 
         IOConstants.commandController.back()
-            .onTrue(new RunCommand(() -> armExtension.setReference(extension.getDouble(10.0), ControlType.kPosition)))
-            .onFalse(new InstantCommand(() -> { if (extensionLimit.isPressed()) { armExtension.setEncoderPosition(0.0); } }));
-    }
-
-    private void configureMotors() {
-        // Grabber Rotation
-        grabberRotation.enableSoftLimit(SoftLimitDirection.kReverse, true);
-        grabberRotation.enableSoftLimit(SoftLimitDirection.kForward, true);
-
-        grabberRotation.setSoftLimit(SoftLimitDirection.kReverse, -2);
-        grabberRotation.setSoftLimit(SoftLimitDirection.kForward, 6);
-
-        // Grabber Contraction
-        grabberContraction.enableSoftLimit(SoftLimitDirection.kForward, true);
-        grabberContraction.enableSoftLimit(SoftLimitDirection.kReverse, true);
-
-        grabberContraction.setSoftLimit(SoftLimitDirection.kReverse, -30);
-        grabberContraction.setSoftLimit(SoftLimitDirection.kForward, 150);
-
-        // Arm Rotation
-        armRotation.enableSoftLimit(SoftLimitDirection.kReverse, true);
-        armRotation.setSoftLimit(SoftLimitDirection.kReverse, 0);
-        armRotation.setInverted(true);
-        armRotation.setIdleMode(IdleMode.kBrake);
-
-        // Arm Extension
-        
-        armExtension.setMaxOutput(0.25);
-        armExtension.setMinOutput(-0.25);
-        armExtension.setInverted(true);
-
-        armExtension.setIdleMode(IdleMode.kBrake);
-    }
-
-    private void configureLEDs() {
-        leds = new AddressableLED(IOConstants.ledPort);
-
-        ledBuffer = new AddressableLEDBuffer(LEDConstants.length);
-        for (var i = 0; i < LEDConstants.length; i++) {
-            ledBuffer.setRGB(i, 255, 0, 255);
-        }
-        leds.setLength(LEDConstants.length);
-
-        leds.setData(ledBuffer);
-        leds.start();
+            .onTrue(new RunCommand(() -> arm.setExtensionPosition(extension.getDouble(10.0))))
+            .onFalse(new InstantCommand(() -> {
+                arm.zeroLimit();
+                arm.holdExtension();
+            }));
     }
 
     private void configureDashboard() {
@@ -293,6 +222,16 @@ public class RobotContainer {
 
         testInput = new DoubleInput("Test Input", 10.0);
         System.out.println(testInput.get());
+    }
+
+    private void configureRumble() {
+        new DoubleEvent(navxJerkX, (double jerk) -> Math.abs(jerk) > COLLISION_THRESHOLD)
+            .castTo(Trigger::new)
+            .onTrue(new InstantCommand(() -> IOConstants.controller.setRumble(RumbleType.kBothRumble, 1.0)));
+
+        new DoubleEvent(navxJerkY, (double jerk) -> Math.abs(jerk) > COLLISION_THRESHOLD)
+            .castTo(Trigger::new)
+            .onTrue(new InstantCommand(() -> IOConstants.controller.setRumble(RumbleType.kBothRumble, Math.copySign(1.0, navxJerkY.getAsDouble()))));
     }
 
     /**
@@ -339,5 +278,11 @@ public class RobotContainer {
 
         // Run the command, then stop.
         return swerveControllerCommand.andThen(() -> drive.drive(0, 0, 0, false, false));
+    }
+
+    private void initTelemetry(SubsystemBase[] subsystems) {
+        for (SubsystemBase subsystem : subsystems) {
+            SmartDashboard.putData(subsystem);
+        }
     }
 }

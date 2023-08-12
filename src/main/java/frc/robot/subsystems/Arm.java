@@ -1,15 +1,151 @@
 package frc.robot.subsystems;
 
-public class Arm {
+// Rev
+import com.revrobotics.REVLibError;
+import com.revrobotics.CANSparkMax.ControlType;
+import com.revrobotics.CANSparkMax.IdleMode;
+import com.revrobotics.CANSparkMax.SoftLimitDirection;
+import com.revrobotics.SparkMaxLimitSwitch;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+
+import edu.wpi.first.util.sendable.SendableBuilder;
+// WPI
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+// Local
+import frc.robot.Constants.IOConstants;
+import frc.robot.Constants.ArmConstants;
+import wildlib.PIDSparkMax;
+
+public class Arm extends SubsystemBase {
+    private final PIDSparkMax m_extension;
+    private final PIDSparkMax m_rotation;
+
     private static Arm m_instance;
 
     public static Arm getInstance() {
         if (m_instance == null) {
-            m_instance = new Arm();
+            m_instance = new Arm(
+                new PIDSparkMax(
+                    IOConstants.armExtensionId,
+                    MotorType.kBrushless,
+                    ArmConstants.kExtensionP,
+                    ArmConstants.kExtensionI,
+                    ArmConstants.kExtensionD
+                ),
+                new PIDSparkMax(
+                    IOConstants.armRotationId,
+                    MotorType.kBrushless,
+                    ArmConstants.kRotationP,
+                    ArmConstants.kRotationI,
+                    ArmConstants.kRotationD
+                )
+            );
         }
 
         return m_instance;
     }
 
+    private Arm(PIDSparkMax extension, PIDSparkMax rotation) {
+        m_extension = extension;
+        m_rotation = rotation;
+
+        // Configure rotation
+        m_rotation.enableSoftLimit(SoftLimitDirection.kReverse, true);
+        m_rotation.setSoftLimit(SoftLimitDirection.kReverse, ArmConstants.kMinRotation);
+
+        m_rotation.enableSoftLimit(SoftLimitDirection.kForward, true);
+        m_rotation.setSoftLimit(SoftLimitDirection.kForward, ArmConstants.kMaxRotation);
+
+        m_rotation.setInverted(true);
+
+        m_rotation.setIdleMode(IdleMode.kBrake);
+
+        m_rotation.setPositionConversionFactor(ArmConstants.kRotationConversionFactor);
+        m_rotation.setVelocityConversionFactor(ArmConstants.kRotationConversionFactor);
+
+        // Configure extension
+        m_extension.enableSoftLimit(SoftLimitDirection.kForward, true);
+        m_extension.setSoftLimit(SoftLimitDirection.kForward, ArmConstants.kMaxExtension);
+
+        m_extension.setMaxOutput(0.25);
+        m_extension.setMinOutput(-0.25);
+
+        m_extension.setInverted(true);
+
+        m_extension.setIdleMode(IdleMode.kBrake);
+
+        m_extension.setPositionConversionFactor(ArmConstants.kExtensionConversionFactor);
+        m_extension.setVelocityConversionFactor(ArmConstants.kExtensionConversionFactor);
+    }
+
+    @Override
+    public void periodic() {
+        
+    }
     
+    /**
+     * Sets the reference position for the extension PID.
+     * 
+     * @param position Reference position to set.
+     * @return {@link REVLibError#kOk} if successful.
+     */
+    public void setExtension(double speed) {
+        m_extension.set(speed);
+    }
+    
+    /**
+     * Sets the reference position for the extension PID.
+     * 
+     * @param position Reference position to set.
+     * @return {@link REVLibError#kOk} if successful.
+     */
+    public REVLibError setExtensionPosition(double position) {
+        return m_extension.setReference(position, ControlType.kPosition);
+    }
+
+    public REVLibError setExtensionVelocity(double velocity) {
+        return m_extension.setReference(velocity, ControlType.kVelocity);
+    }
+    
+    public REVLibError holdExtension() {
+        return setExtensionVelocity(0.0);
+    }
+
+    public double getExtension() {
+        return m_extension.getPosition();
+    }
+    
+    public void setRotation(double speed) {
+        m_extension.set(speed);
+    }
+
+    public REVLibError setRotationPosition(double position) {
+        return m_rotation.setReference(position, ControlType.kPosition);
+    }
+
+    public REVLibError setRotationVelocity(double velocity) {
+        return m_extension.setReference(velocity, ControlType.kVelocity);
+    }
+
+    public REVLibError holdRotation() {
+        return setRotationVelocity(0.0);
+    }
+
+    public double getRotation() {
+        return m_rotation.getPosition();
+    }
+
+    public boolean zeroLimit() {
+        return m_extension.limitZero(PIDSparkMax.LimitDirection.kReverse, SparkMaxLimitSwitch.Type.kNormallyClosed);
+    }
+    
+    @Override
+    public void initSendable(SendableBuilder builder) {
+        super.initSendable(builder);
+
+        builder.addDoubleProperty("Arm Extension", () -> getExtension(), (double position) -> setExtension(position));
+        builder.addBooleanProperty("Extension Limit Switch", () -> m_extension.getReverseLimitSwitch(SparkMaxLimitSwitch.Type.kNormallyClosed).isPressed(), null);
+        builder.addDoubleProperty("Arm Rotation", () -> getRotation(), null);
+    }
 }
