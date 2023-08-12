@@ -1,10 +1,8 @@
-package frc.utils.ds;
+package wildlib.utils.ds;
 
-import edu.wpi.first.networktables.GenericSubscriber;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class DoubleInput {
-    private final GenericSubscriber m_subscriber;
     private final String m_key;
     private final double m_default;
 
@@ -13,7 +11,6 @@ public class DoubleInput {
         this.m_default = defaultValue;
 
         SmartDashboard.putNumber(m_key, defaultValue);
-        this.m_subscriber = SmartDashboard.getEntry(m_key).getTopic().genericSubscribe("Double");
     }
 
     public DoubleInput(String key) {
@@ -21,11 +18,11 @@ public class DoubleInput {
     }
 
     public double get(double defaultValue) {
-        return m_subscriber.getDouble(defaultValue);
+        return SmartDashboard.getNumber(m_key, defaultValue);
     }
 
     public double get() {
-        return m_subscriber.getDouble(m_default);
+        return SmartDashboard.getNumber(m_key, m_default);
     }
 
     public void set(double value) {
