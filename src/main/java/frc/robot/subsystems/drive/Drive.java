@@ -1,7 +1,7 @@
 package frc.robot.subsystems.drive;
 
 import frc.robot.subsystems.drive.MAXSwerveModule.ModuleLabel;
-import frc.utils.SwerveUtils;
+import wildlib.utils.SwerveUtils;
 
 import static frc.robot.Constants.DriveConstants;
 import static frc.robot.Constants.IOConstants;
@@ -10,8 +10,8 @@ import com.kauailabs.navx.frc.AHRS;
 import edu.wpi.first.wpilibj.I2C;
 
 import edu.wpi.first.util.WPIUtilJNI;
+import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.math.filter.SlewRateLimiter;
@@ -317,17 +317,15 @@ public class Drive extends SubsystemBase {
     public AHRS getNavx() {
         return gyro;
     }
+    
+    @Override
+    public void initSendable(SendableBuilder builder) {
+        aModule.initSendable(builder);
+        bModule.initSendable(builder);
+        cModule.initSendable(builder);
+        dModule.initSendable(builder);
 
-    public void outputTelemetry() {
-        aModule.outputTelemetry();
-        bModule.outputTelemetry();
-        cModule.outputTelemetry();
-        dModule.outputTelemetry();
-
-        m_field.setRobotPose(getPose());
-
-        SmartDashboard.putNumber("Drive Angle (deg)", getHeading());
-        SmartDashboard.putNumber("Drive Velocity (m/s)", Math.hypot(gyro.getVelocityX(), gyro.getVelocityY()));
-        SmartDashboard.putData("Field", m_field);
+        builder.addDoubleProperty("Drive Angle (deg)", () -> getHeading(), null);
+        builder.addDoubleProperty("Drive Velocity (m/s)", () -> Math.hypot(gyro.getVelocityX(), gyro.getVelocityY()), null);
     }
 }
