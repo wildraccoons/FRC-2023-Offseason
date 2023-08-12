@@ -1,16 +1,16 @@
 package wildlib;
 
-import java.util.Optional;
-
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.REVLibError;
 import com.revrobotics.RelativeEncoder;
+import com.revrobotics.SparkMaxLimitSwitch;
 import com.revrobotics.SparkMaxPIDController;
 
 /** Utility class for a Spark Max PID controller */
 public class PIDSparkMax extends CANSparkMax {
     private static double kP = 0.2; 
     private static double kI = 1e-4;
-    private static double kD = 1; 
+    private static double kD = 0; 
 
     private double kIz = 0; 
     private double kFF = 0; 
@@ -18,13 +18,13 @@ public class PIDSparkMax extends CANSparkMax {
     private double kMaxOutput = 0.75; 
     private double kMinOutput = -0.75;
 
-    private RelativeEncoder encoder;
+    private RelativeEncoder m_encoder;
     private SparkMaxPIDController m_controller;
 
-    private boolean limitEnabledForward = false;
-    private boolean limitEnabledBackward = false;
-    private LimitSwitch limitForward;
-    private LimitSwitch limitBackward;
+    public enum LimitDirection {
+        kForward,
+        kReverse,
+    }
 
     /** Creates a new {@link PIDSparkMax} with default {@code kP}, {@code kI}, {@code kD} values.
      * <br><br>
@@ -54,8 +54,8 @@ public class PIDSparkMax extends CANSparkMax {
      */
     public PIDSparkMax(int deviceId, MotorType type, double proportional, double integral, double derivative) {
         super(deviceId, type);
-        this.encoder = super.getEncoder();
-        this.m_controller = super.getPIDController();
+        m_encoder = super.getEncoder();
+        m_controller = super.getPIDController();
 
         m_controller.setP(proportional);
         m_controller.setI(integral);
@@ -64,7 +64,6 @@ public class PIDSparkMax extends CANSparkMax {
         m_controller.setIZone(kIz);
         m_controller.setFF(kFF);
         m_controller.setOutputRange(kMinOutput, kMaxOutput);
-        m_controller.setFeedbackDevice(encoder);
     }
 
     /** 
@@ -89,63 +88,76 @@ public class PIDSparkMax extends CANSparkMax {
         m_controller.setOutputRange(this.kMinOutput, this.kMaxOutput);
     }
 
-    public void setReference(double value, ControlType ctrl) {
-        m_controller.setReference(value, ctrl);
-    }
-
-    /**
-     * Enables or disables limit switch checking for the given direction.
-     * Must be called with {@link #addLimitSwitch(LimitSwitch, SoftLimitDirection) addLimitSwitch()}
-     * in order to take effect.
+    /** 
+     * Set the controller reference value based on the selected control mode.
      * 
-     * @param enable Enable ({@code true}) or disable ({@code false}) limit switch checking.
-     * @param direction The direction to set.
+     * @param value The value to set depending on the control mode. 
+     *              For basic duty cycle control this should be a value between -1 and 1 
+     *              Otherwise: Voltage Control: Voltage (volts) 
+     *              Velocity Control: Velocity (RPM) 
+     *              Position Control: Position (Rotations) 
+     *              Current Control: Current (Amps). 
+     *              Native units can be changed using the setPositionConversionFactor() or 
+     *              setVelocityConversionFactor() methods of the CANEncoder class.
+     * @param ctrl The control type.
+     * @return {@link REVLibError#kOk} if successful.
      */
-    public void enableLimitSwitch(boolean enable, CANSparkMax.SoftLimitDirection direction) {
-        switch (direction) {
-        case kForward:
-            this.limitEnabledForward = enable;
-        case kReverse:
-            this.limitEnabledBackward = enable;
-        }
+    public REVLibError setReference(double value, ControlType ctrl) {
+        return m_controller.setReference(value, ctrl);
     }
 
     /** 
-     * Sets the limit switch for the given direction.
-     * The motor will refuse to turn if it is told to
-     * drive past the limit. Must be enabled with
-     * {@link #enableLimitSwitch(boolean, SoftLimitDirection) enableLimitSwitch()}
-     * in order to take effect.<br><br>
-     * <strong>Note:</strong> Since {@link #setReference(double, ControlType) setReference()}
-     * sets a value in the physical Spark Max, the motor will continue to try and reach the
-     * previously set reference if {@link #setReference(double, ControlType) setReference()}
-     * is not called continuously.
+     * Overwrites the current position of the motor encoder.
+     * 
+     * @param position The reference position to use in the PID.
+     * @return {@link REVLibError#kOk} if successful.
      */
-    public void addLimitSwitch(LimitSwitch limit, CANSparkMax.SoftLimitDirection direction) {
-        switch (direction) {
-        case kForward:
-            this.limitForward = limit;
-        case kReverse:
-            this.limitBackward = limit;
-        }
+    public REVLibError setTargetPostion(double position) {
+        return m_controller.setReference(position, ControlType.kPosition);
     }
 
-    /** Overwrites the current position of the motor encoder. */
-    public void setTargetPostion(double pos) {
-        m_controller.setReference(pos, ControlType.kPosition);
+    /**
+     * Set the conversion factor for position of the encoder.
+     * Multiplied by the native output units to give you position.
+     * 
+     * @param factor The conversion factor to multiply the native unit by.
+     * @return {@link REVLibError#kOk} if successful.
+     */
+    public REVLibError setPositionConversionFactor(double factor) {
+        return m_encoder.setPositionConversionFactor(factor);
     }
 
-    /** Sets the encoder position to 0 if the specified limit switch is pressed. */
-    public boolean limitZero(SoftLimitDirection direction) {
+    /**
+     * Set the conversion factor for velocity of the encoder.
+     * Multiplied by the native output units to give you velocity.
+     * 
+     * @param factor The conversion factor to multiply the native unit by.
+     * @return {@link REVLibError#kOk} if successful.
+     */
+    public REVLibError setVelocityConversionFactor(double factor) {
+        return m_encoder.setVelocityConversionFactor(factor);
+    }
+
+    /**
+     * Zeros the encoder if the specified limit switch is pressed.
+     * This call will disable support for the alternate encoder.
+     * 
+     * @param direction Which limit switch to check.
+     * @param polarity The polarity of the specified limit switch.
+     * @return {@code true} if the encoder was zeroed.
+     */
+    public boolean limitZero(LimitDirection direction, SparkMaxLimitSwitch.Type polarity) {
         switch (direction) {
         case kForward:
-            if (this.limitEnabledForward && this.limitForward != null && this.limitForward.getPressed()) {
-                this.encoder.setPosition(0);
+            SparkMaxLimitSwitch forwardLimit = super.getForwardLimitSwitch(polarity);
+            if (forwardLimit.isLimitSwitchEnabled() && forwardLimit.isPressed()) {
+                setEncoderPosition(0.0);
                 return true;
             }
         case kReverse:
-            if (this.limitEnabledBackward && this.limitBackward != null && this.limitBackward.getPressed()) {
-                this.encoder.setPosition(0);
+            SparkMaxLimitSwitch reverseLimit = super.getReverseLimitSwitch(polarity);
+            if (reverseLimit.isLimitSwitchEnabled() && reverseLimit.isPressed()) {
+                setEncoderPosition(0.0);
                 return true;
             }
         }
@@ -159,7 +171,7 @@ public class PIDSparkMax extends CANSparkMax {
      * @return Relative position in Rotations
      */
     public double getPosition() {
-        return this.encoder.getPosition();
+        return m_encoder.getPosition();
     }
 
     /**
@@ -168,21 +180,7 @@ public class PIDSparkMax extends CANSparkMax {
      * @param position The position to override with.
      */
     public void setEncoderPosition(double position) {
-        this.encoder.setPosition(position);
-    }
-
-    /** 
-     * Returns the state of the {@link LimitSwitch limit switch} added for the
-     * given direction. Returns {@code null} if no {@link LimitSwitch limit switch}
-     * has been added.
-     */
-    public Optional<Boolean> getLimit(SoftLimitDirection direction) {
-        LimitSwitch read = direction == SoftLimitDirection.kForward ? this.limitForward : this.limitBackward;
-        if (read == null) {
-            return null;
-        } else {
-            return Optional.of(read.getPressed());
-        }
+        m_encoder.setPosition(position);
     }
 
     /** Get the velocity of the motor from the encoder.
@@ -191,6 +189,6 @@ public class PIDSparkMax extends CANSparkMax {
      * @return Velocity of the motor in 'RPM'
      */
     public double getVelocity() {
-        return this.encoder.getVelocity();
+        return m_encoder.getVelocity();
     }
 }
