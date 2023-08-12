@@ -2,7 +2,6 @@ package frc.robot.subsystems.drive;
 
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.ModuleConstants;
-import frc.robot.subsystems.Telemetry;
 
 import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.CANSparkMax;
@@ -13,6 +12,8 @@ import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.util.sendable.Sendable;
+import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /** 
@@ -22,25 +23,22 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * MAXs for control, and Through Bore Absolute Encoder
  * through the wheels' axis of yaw rotation.
  */
-public class MAXSwerveModule {
+public class MAXSwerveModule implements Sendable {
     public enum ModuleLabel {
-        A,
-        B,
-        C,
-        D,
+        A, B, C, D,
     }
 
-    private final double angularOffset;
+    private final double m_angularOffset;
     private final ModuleLabel m_label;
 
-    private final CANSparkMax driveSpark;
-    private final CANSparkMax turnSpark;
+    private final CANSparkMax m_driveMotor;
+    private final CANSparkMax m_turnMotor;
 
-    private final RelativeEncoder driveEncoder;
-    private final AbsoluteEncoder turnEncoder;
+    private final RelativeEncoder m_driveEncoder;
+    private final AbsoluteEncoder m_turnEncoder;
 
-    private final SparkMaxPIDController drivePID;
-    private final SparkMaxPIDController turnPID;
+    private final SparkMaxPIDController m_drivePID;
+    private final SparkMaxPIDController m_turnPID;
 
     private SwerveModuleState targetState = new SwerveModuleState(0.0, new Rotation2d());
 
@@ -57,65 +55,65 @@ public class MAXSwerveModule {
     public MAXSwerveModule(int driveId, int turnId, ModuleLabel moduleLabel) {
         m_label = moduleLabel;
 
-        driveSpark = new CANSparkMax(driveId, ModuleConstants.driveMotorType);
-        turnSpark = new CANSparkMax(turnId, ModuleConstants.turnMotorType);
+        m_driveMotor = new CANSparkMax(driveId, ModuleConstants.driveMotorType);
+        m_turnMotor = new CANSparkMax(turnId, ModuleConstants.turnMotorType);
 
         // Factory reset so the Spark MAXs are in a known state before config.
-        driveSpark.restoreFactoryDefaults();
-        turnSpark.restoreFactoryDefaults();
+        m_driveMotor.restoreFactoryDefaults();
+        m_turnMotor.restoreFactoryDefaults();
 
         // Get encoders for each motor.
-        driveEncoder = driveSpark.getEncoder();
-        turnEncoder = turnSpark.getAbsoluteEncoder(Type.kDutyCycle);
+        m_driveEncoder = m_driveMotor.getEncoder();
+        m_turnEncoder = m_turnMotor.getAbsoluteEncoder(Type.kDutyCycle);
 
         // Setup PID controllers and link correct encoders as feedback devices.
-        drivePID = driveSpark.getPIDController();
-        turnPID = turnSpark.getPIDController();
-        drivePID.setFeedbackDevice(driveEncoder);
-        turnPID.setFeedbackDevice(turnEncoder);
+        m_drivePID = m_driveMotor.getPIDController();
+        m_turnPID = m_turnMotor.getPIDController();
+        m_drivePID.setFeedbackDevice(m_driveEncoder);
+        m_turnPID.setFeedbackDevice(m_turnEncoder);
 
         // Apply the position and velocity conversion factors for the drive encoder.
-        driveEncoder.setPositionConversionFactor(ModuleConstants.driveEncoderPositionFactor);
-        driveEncoder.setVelocityConversionFactor(ModuleConstants.driveEncoderVelocityFactor);
+        m_driveEncoder.setPositionConversionFactor(ModuleConstants.driveEncoderPositionFactor);
+        m_driveEncoder.setVelocityConversionFactor(ModuleConstants.driveEncoderVelocityFactor);
 
         // Apply the position and velocity conversion factors for the turning encoder.
-        turnEncoder.setPositionConversionFactor(ModuleConstants.turnEncoderPositionFactor);
-        turnEncoder.setVelocityConversionFactor(ModuleConstants.turnEncoderVelocityFactor);
-        turnEncoder.setInverted(ModuleConstants.encoderReversed);
+        m_turnEncoder.setPositionConversionFactor(ModuleConstants.turnEncoderPositionFactor);
+        m_turnEncoder.setVelocityConversionFactor(ModuleConstants.turnEncoderVelocityFactor);
+        m_turnEncoder.setInverted(ModuleConstants.encoderReversed);
 
         // Enable PID wrap around for the turning motor. This allows for the PID
         // controller to go through 0 to get to the setpoint.
-        turnPID.setPositionPIDWrappingEnabled(true);
-        turnPID.setPositionPIDWrappingMaxInput(ModuleConstants.turnEncoderPositionPIDMinInput);
-        turnPID.setPositionPIDWrappingMaxInput(ModuleConstants.turnEncoderPositionPIDMaxInput);
+        m_turnPID.setPositionPIDWrappingEnabled(true);
+        m_turnPID.setPositionPIDWrappingMaxInput(ModuleConstants.turnEncoderPositionPIDMinInput);
+        m_turnPID.setPositionPIDWrappingMaxInput(ModuleConstants.turnEncoderPositionPIDMaxInput);
 
         // Set the PID gains for the drive motor.
-        drivePID.setP(ModuleConstants.driveKP);
-        drivePID.setI(ModuleConstants.driveKI);
-        drivePID.setD(ModuleConstants.driveKD);
-        drivePID.setFF(ModuleConstants.driveFF);
-        drivePID.setOutputRange(ModuleConstants.driveMinOutput, ModuleConstants.driveMaxOutput);
+        m_drivePID.setP(ModuleConstants.driveKP);
+        m_drivePID.setI(ModuleConstants.driveKI);
+        m_drivePID.setD(ModuleConstants.driveKD);
+        m_drivePID.setFF(ModuleConstants.driveFF);
+        m_drivePID.setOutputRange(ModuleConstants.driveMinOutput, ModuleConstants.driveMaxOutput);
 
         // Set the PID gains for the turn motor.
-        turnPID.setP(ModuleConstants.turnKP);
-        turnPID.setI(ModuleConstants.turnKI);
-        turnPID.setD(ModuleConstants.turnKD);
-        turnPID.setFF(ModuleConstants.turnFF);
-        turnPID.setOutputRange(ModuleConstants.turnMinOutput, ModuleConstants.turnMaxOutput);
+        m_turnPID.setP(ModuleConstants.turnKP);
+        m_turnPID.setI(ModuleConstants.turnKI);
+        m_turnPID.setD(ModuleConstants.turnKD);
+        m_turnPID.setFF(ModuleConstants.turnFF);
+        m_turnPID.setOutputRange(ModuleConstants.turnMinOutput, ModuleConstants.turnMaxOutput);
 
-        driveSpark.setIdleMode(ModuleConstants.driveMotorIdleMode);
-        turnSpark.setIdleMode(ModuleConstants.turnMotorIdleMode);
-        driveSpark.setSmartCurrentLimit(ModuleConstants.driveMotorCurrentLimit);
-        turnSpark.setSmartCurrentLimit(ModuleConstants.turnMotorCurrentLimit);
+        m_driveMotor.setIdleMode(ModuleConstants.driveMotorIdleMode);
+        m_turnMotor.setIdleMode(ModuleConstants.turnMotorIdleMode);
+        m_driveMotor.setSmartCurrentLimit(ModuleConstants.driveMotorCurrentLimit);
+        m_turnMotor.setSmartCurrentLimit(ModuleConstants.turnMotorCurrentLimit);
 
         // Burn configuration to flash so that if a brown out occurs during
         // operation the Spark will maintain the same configuration.
-        driveSpark.burnFlash();
-        turnSpark.burnFlash();
+        m_driveMotor.burnFlash();
+        m_turnMotor.burnFlash();
 
-        this.angularOffset = DriveConstants.angularOffsets[moduleLabel.ordinal()];
-        targetState.angle = new Rotation2d(turnEncoder.getPosition());
-        driveEncoder.setPosition(0);
+        this.m_angularOffset = DriveConstants.angularOffsets[moduleLabel.ordinal()];
+        targetState.angle = new Rotation2d(m_turnEncoder.getPosition());
+        m_driveEncoder.setPosition(0);
     }
 
     /**
@@ -125,8 +123,8 @@ public class MAXSwerveModule {
      */
     public SwerveModuleState getState() {
         return new SwerveModuleState(
-            driveEncoder.getVelocity(),
-            new Rotation2d(turnEncoder.getPosition() - angularOffset)
+            m_driveEncoder.getVelocity(),
+            new Rotation2d(m_turnEncoder.getPosition() - m_angularOffset)
         );
     }
 
@@ -137,8 +135,8 @@ public class MAXSwerveModule {
      */
     public SwerveModulePosition getPosition() {
         return new SwerveModulePosition(
-            driveEncoder.getPosition(),
-            new Rotation2d(turnEncoder.getPosition() - angularOffset)
+            m_driveEncoder.getPosition(),
+            new Rotation2d(m_turnEncoder.getPosition() - m_angularOffset)
         );
     }
 
@@ -151,28 +149,27 @@ public class MAXSwerveModule {
         // Apply chassis angular offset to the target state
         SwerveModuleState correctedTarget = new SwerveModuleState();
         correctedTarget.speedMetersPerSecond = target.speedMetersPerSecond;
-        correctedTarget.angle = target.angle.plus(Rotation2d.fromRadians(angularOffset));
+        correctedTarget.angle = target.angle.plus(Rotation2d.fromRadians(m_angularOffset));
 
         // Optimize the reference state to avoid spinning further than 90 degrees
-        SwerveModuleState optimizedTarget = SwerveModuleState.optimize(correctedTarget, new Rotation2d(turnEncoder.getPosition()));
+        SwerveModuleState optimizedTarget = SwerveModuleState.optimize(correctedTarget, new Rotation2d(m_turnEncoder.getPosition()));
         
         // Command driving and turning Spark MAXs to their respective setpoints.
-        drivePID.setReference(optimizedTarget.speedMetersPerSecond, CANSparkMax.ControlType.kVelocity);
-        turnPID.setReference(optimizedTarget.angle.getRadians(), CANSparkMax.ControlType.kPosition);
+        m_drivePID.setReference(optimizedTarget.speedMetersPerSecond, CANSparkMax.ControlType.kVelocity);
+        m_turnPID.setReference(optimizedTarget.angle.getRadians(), CANSparkMax.ControlType.kPosition);
 
         targetState = target;
     }
 
     /** Zeros the drive encoder. */
     public void resetEncoders() {
-        driveEncoder.setPosition(0);
+        m_driveEncoder.setPosition(0);
     }
 
-    public void outputTelemetry() {
-        SwerveModulePosition position = getPosition();
-
-        SmartDashboard.putNumber("Module " + m_label.name() + " Angle (rads)", position.angle.getRadians());
-        SmartDashboard.putNumber("Module " + m_label.name() + " Distance (m)", position.distanceMeters);
-        SmartDashboard.putNumber("Module " + m_label.name() + " Speed (m/s)", driveEncoder.getVelocity());
+    @Override
+    public void initSendable(SendableBuilder builder) {
+        builder.addDoubleProperty("Module " + m_label.name() + " Angle (rads)", () -> m_turnEncoder.getPosition() - m_angularOffset, null);
+        builder.addDoubleProperty("Module " + m_label.name() + " Distance (m)", () -> m_driveEncoder.getPosition(), null);
+        builder.addDoubleProperty("Module " + m_label.name() + " Speed (m/s)", () -> m_driveEncoder.getVelocity(), null);
     }
 }
