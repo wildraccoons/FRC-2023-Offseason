@@ -30,16 +30,14 @@ public final class Constants {
     public static final class DriveConstants {
         /** 
          * Distance between centers of front and back wheels on drivetrain. 
-         * Explained in more detail in {@link frc.robot.subsystems.drive.Drive#SwerveSubsystem(double, double, edu.wpi.first.wpilibj.interfaces.Gyro, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule) <code>new frc.robot.subsystems.SwerveSubsystem()</code>}
+         * Explained in more detail in {@link frc.robot.subsystems.drive.Drive#Drive() <code>new frc.robot.subsystems.Drive()</code>}
          */
         public static final double wheelBase = Units.inchesToMeters(26.5); // Meters (m)
         /** 
          * Distance between centers of right and left wheels on drivetrain.
-         * Explained in more detail in {@link frc.robot.subsystems.drive.Drive#SwerveSubsystem(double, double, edu.wpi.first.wpilibj.interfaces.Gyro, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule, frc.robot.subsystems.MAXSwerveModule) <code>new frc.robot.subsystems.SwerveSubsystem()</code>}
+         * Explained in more detail in {@link frc.robot.subsystems.drive.Drive#Drive() <code>new frc.robot.subsystems.Drive()</code>}
          */
         public static final double trackWidth = Units.inchesToMeters(26.5); // Meters (m)
-
-
 
         /** Angular offset of module A (in rads). */
         public static final double aAngularOffset = -Math.PI/2;
@@ -68,6 +66,73 @@ public final class Constants {
         public static final boolean gyroReversed = true;
         /** Max input speed. */
         public static final double speed = 0.5;
+    }
+
+    /** Constants for the arm subsystem. */
+    public static final class ArmConstants {
+        /** 
+         * The minimum arm extension without breaking the mechanism.
+         * Not used due to arm retraction having a physical limit switch.
+         */
+        public static final float kMinExtension = 0.0f;
+        /** The maximum arm extension without breaking the mechanism. */
+        public static final float kMaxExtension = 30.0f;
+        /** Conversion factor for arm extension motor rotations to meters of extension. */
+        public static final double kExtensionConversionFactor = 1.0; // TODO: actually measure arm extension factor.  Just measure how far it moves after 10 rotations and extrapolate from there.
+        // TODO: Tune arm extension PID.
+        /** kP for the extension PID controller. */
+        public static final double kExtensionP = 1.0;
+        /** kI for the extension PID controller. */
+        public static final double kExtensionI = 0.0;
+        /** kD for the extension PID controller. */
+        public static final double kExtensionD = 0.0;
+
+        // This one is the whole reason I threw these in,
+        // we absolutely destroyed one of the support bars without it.
+        /** The minimum arm rotation without breaking the mechanism. */
+        public static final float kMinRotation = 0.0f;
+        /** The maximum arm rotation without breaking the mechanism. */
+        public static final float kMaxRotation = 6.0f;
+        /** Conversion factor for arm rotation motor rotations to radians of arm rotation. */
+        public static final double kRotationConversionFactor = 1.0; // TODO: actually measure arm rotation factor. Should just be the gear ratio * τ.
+        // TODO: Tune claw contraction PID.
+        /** kP for the rotation PID controller. */
+        public static final double kRotationP = 1.0;
+        /** kI for the rotation PID controller. */
+        public static final double kRotationI = 0.0;
+        /** kD for the rotation PID controller. */
+        public static final double kRotationD = 0.0;
+    }
+
+    /** Constants for the claw subsystem. */
+    public static final class ClawConstants {
+        /** The minimum claw contraction without breaking the mechanism. */
+        public static final float kMinContraction = -30.0f; // TODO: find actual limit
+        /** The maximum claw contraction without breaking the mechanism. */
+        public static final float kMaxContraction = 150.0f; // TODO: find actual limit
+        /** Conversion factor for claw contraction motor rotations to meters of movement. */
+        public static final double kContractionConversionFactor = 1.0; // TODO: actually measure claw contraction factor. Just measure how far it moves after 10 rotations and extrapolate from there.
+        // TODO: Tune claw contraction PID.
+        /** kP for the contraction PID controller. */
+        public static final double kContractionP = 1.0;
+        /** kI for the contraction PID controller. */
+        public static final double kContractionI = 0.0;
+        /** kD for the contraction PID controller. */
+        public static final double kContractionD = 0.0;
+
+        /** The minimum claw rotation without breaking the mechanism. */
+        public static final float kMinRotation = -2.0f;
+        /** The maximum claw rotation without breaking the mechanism. */
+        public static final float kMaxRotation = 6.0f;
+        /** Conversion factor for claw rotation motor rotations to radians of claw rotation. */
+        public static final double kRotationConversionFactor = 1.0; // TODO: actually measure claw rotation factor. Should just be the gear ratio * τ.
+        // TODO: Tune claw rotation PID.
+        /** kP for the rotation PID controller. */
+        public static final double kRotationP = 1.0;
+        /** kI for the rotation PID controller. */
+        public static final double kRotationI = 0.0;
+        /** kD for the rotation PID controller. */
+        public static final double kRotationD = 0.0;
     }
     
     /** 
@@ -190,9 +255,9 @@ public final class Constants {
         /** Spark Max CAN ID for the arm extension motor. */
         public static final int armExtensionId = 12;
         /** Spark Max CAN ID for the grabber rotation motor. */
-        public static final int grabberRotationId = 13;
+        public static final int clawRotationId = 13;
         /** Spark Max CAN ID for the grabber contraction. */
-        public static final int grabberContractionId = 14;
+        public static final int clawContractionId = 14;
         /** PWM port for the addressable LEDs. */
         public static final int ledPort = 0;
     }
@@ -253,6 +318,6 @@ public final class Constants {
 
     /** Constants used for addressable LEDs */
     public static final class LEDConstants {
-        public static final int length = 300;
+        public static final int kLength = 300;
     }
 }
