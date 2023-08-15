@@ -8,7 +8,7 @@ package frc.robot;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.Arm;
 import frc.robot.subsystems.Claw;
-import frc.robot.subsystems.LEDs;
+import frc.robot.subsystems.PicoLED;
 // Constants
 import frc.robot.Constants.IOConstants;
 import frc.robot.Constants.LEDConstants;
@@ -64,7 +64,7 @@ public class RobotContainer {
     private static final Drive drive = Drive.getInstance();
     private static final Arm arm = Arm.getInstance();
     private static final Claw claw = Claw.getInstance();
-    private static final LEDs leds = LEDs.getInstance();
+    private static final PicoLED leds = PicoLED.getInstance();
 
     private static final AHRS navx = drive.getNavx();
     

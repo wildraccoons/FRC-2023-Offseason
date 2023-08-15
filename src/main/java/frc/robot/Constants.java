@@ -258,8 +258,8 @@ public final class Constants {
         public static final int clawRotationId = 13;
         /** Spark Max CAN ID for the grabber contraction. */
         public static final int clawContractionId = 14;
-        /** PWM port for the addressable LEDs. */
-        public static final int ledPort = 0;
+        /** I²C address used by the Raspberry Pi Pico LED controller. */
+        public static final int kLedAddr = 4;
     }
 
     /** Various motor constants taken from datasheets. */
