@@ -8,6 +8,7 @@ package frc.robot;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.Arm;
 import frc.robot.subsystems.Claw;
+import frc.robot.subsystems.Limelight;
 import frc.robot.subsystems.PicoLED;
 // Constants
 import frc.robot.Constants.IOConstants;
@@ -65,11 +66,9 @@ public class RobotContainer {
     private static final Arm arm = Arm.getInstance();
     private static final Claw claw = Claw.getInstance();
     private static final PicoLED leds = PicoLED.getInstance();
+    private static final Limelight limelight = Limelight.getInstance();
 
     private static final AHRS navx = drive.getNavx();
-    
-    private final NetworkTable limelight = NetworkTableInstance.getDefault().getTable("limelight");
-    private final DoubleSubscriber targetOffsetHorizontal = limelight.getDoubleTopic("tx").subscribe(0.0);
 
     private double previousAccelX = 0.0;
     private double previousAccelY = 0.0;
@@ -152,7 +151,7 @@ public class RobotContainer {
             .leftTrigger()
             .whileTrue(new RunCommand(
                 () -> {
-                    double readOffset = targetOffsetHorizontal.get();
+                    double readOffset = limelight.targetHorizontal();
                     if (readOffset < 0.0) {
                         readOffset /= VisionConstants.leftFOV;
                     }  else {
