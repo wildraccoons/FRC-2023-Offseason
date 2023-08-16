@@ -86,14 +86,6 @@ public class Drive extends SubsystemBase {
      * 
      * </pre>
      * Track and base dimensions are measured from the centers of each wheel.
-     * 
-     * @param trackWidth The track length indicated on the diagram.
-     * @param wheelBase The width of the wheelbase indicated on the diagram.
-     * @param gyro The gyro sensor used for gyroscopic positioning.
-     * @param moduleA The MAXSwerve module at position A
-     * @param moduleB The MAXSwerve module at position B
-     * @param moduleC The MAXSwerve module at position C 
-     * @param moduleD The MAXSwerve module at position D
      */
     private Drive() {
         SmartDashboard.putData("Field", m_field);

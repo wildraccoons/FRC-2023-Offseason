@@ -85,10 +85,9 @@ public class Arm extends SubsystemBase {
     }
     
     /**
-     * Sets the reference position for the extension PID.
+     * Sets the speed of the extension motor.
      * 
-     * @param position Reference position to set.
-     * @return {@link REVLibError#kOk} if successful.
+     * @param speed The speed to set. Value should be between -1.0 and 1.0.
      */
     public void setExtension(double speed) {
         m_extension.set(speed);

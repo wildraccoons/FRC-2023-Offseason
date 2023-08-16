@@ -99,5 +99,6 @@ tasks.withType(JavaCompile) {
 }
 
 javadoc {
+    options.tags = ["pre:a:Prerequisite:"]
     options.encoding = 'UTF-8'
 }

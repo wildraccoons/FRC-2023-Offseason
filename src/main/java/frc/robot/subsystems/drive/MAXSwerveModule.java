@@ -50,7 +50,7 @@ public class MAXSwerveModule implements Sendable {
      * 
      * @param driveId The CAN Id of the drive motor (NEO)
      * @param turnId The CAN Id of the turning motor (NEO 550)
-     * @param angularOffset Angular offset of the swerve module compared to the zero.
+     * @param moduleLabel The given module label shown in {@link frc.robot.subsystems.drive.Drive#Drive() <code>new frc.robot.subsystems.Drive()</code>}.
      */
     public MAXSwerveModule(int driveId, int turnId, ModuleLabel moduleLabel) {
         m_label = moduleLabel;
