@@ -12,7 +12,6 @@ import frc.robot.subsystems.Limelight;
 import frc.robot.subsystems.PicoLED;
 // Constants
 import frc.robot.Constants.IOConstants;
-import frc.robot.Constants.LEDConstants;
 import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.VisionConstants;
 // Wildlib
@@ -30,19 +29,20 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator;
 // WPILib
 import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.AddressableLED;
-import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.PIDCommand;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.DriverStation.MatchType;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
@@ -50,10 +50,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 // Network Tables
-import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.GenericSubscriber;
-import edu.wpi.first.networktables.NetworkTable;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -207,6 +204,9 @@ public class RobotContainer {
                 arm.zeroLimit();
                 arm.holdExtension();
             }));
+
+        IOConstants.commandController.rightBumper()
+            .whileTrue(getBalanceCommand());
     }
 
     private void configureDashboard() {
@@ -277,6 +277,20 @@ public class RobotContainer {
 
         // Run the command, then stop.
         return swerveControllerCommand.andThen(() -> drive.drive(0, 0, 0, false, false));
+    }
+
+
+    private PIDCommand getBalanceCommand() {
+        return new PIDCommand(new PIDController(1, 0, 0), () -> {
+            // Rotate unit vector to face the same direction as the robot.
+            Translation3d face = new Translation3d(1, 0, 0).rotateBy(getHeading());
+            // Get the pitch of the robot from the ground regardless of yaw.
+            return Math.atan2(face.getY(), Math.sqrt(face.getX()*face.getX() + face.getZ()*face.getZ()));
+        }, 0, (double output) -> drive.drive(output / 4, 0, 0, true, false), drive);
+    }
+
+    private Rotation3d getHeading() {
+        return new Rotation3d(navx.getRoll(), navx.getPitch(), navx.getYaw());
     }
 
     private void initTelemetry(SubsystemBase[] subsystems) {
