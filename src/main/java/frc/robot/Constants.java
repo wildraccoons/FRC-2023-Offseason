@@ -128,9 +128,9 @@ public final class Constants {
         public static final double kRotationConversionFactor = 1.0; // TODO: actually measure claw rotation factor. Should just be the gear ratio * τ.
         // TODO: Tune claw rotation PID.
         /** kP for the rotation PID controller. */
-        public static final double kRotationP = 1.0;
+        public static final double kRotationP = 0.2;
         /** kI for the rotation PID controller. */
-        public static final double kRotationI = 0.0;
+        public static final double kRotationI = 1e-4;
         /** kD for the rotation PID controller. */
         public static final double kRotationD = 0.0;
     }

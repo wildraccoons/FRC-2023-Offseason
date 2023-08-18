@@ -53,6 +53,9 @@ public class Claw extends SubsystemBase {
         m_rotation.setPositionConversionFactor(ClawConstants.kRotationConversionFactor);
         m_rotation.setVelocityConversionFactor(ClawConstants.kRotationConversionFactor);
 
+        m_rotation.setMaxOutput(0.2);
+        m_rotation.setMinOutput(-0.1);
+
         // Configure contraction
         m_contraction.enableSoftLimit(SoftLimitDirection.kForward, true);
         m_contraction.setSoftLimit(SoftLimitDirection.kReverse, ClawConstants.kMinContraction);
@@ -90,7 +93,11 @@ public class Claw extends SubsystemBase {
     }
 
     public REVLibError holdRotation() {
-        return setRotationVelocity(0.0);
+        return setRotationPosition(getRotation());
+    }
+
+    public double getRotation() {
+        return m_rotation.getPosition();
     }
 
     public void setContraction(double speed) {

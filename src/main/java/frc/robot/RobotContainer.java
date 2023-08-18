@@ -175,11 +175,11 @@ public class RobotContainer {
             .onFalse(new InstantCommand(() -> claw.stopContraction(), claw));
             
             IOConstants.commandController.povUp()
-            .onTrue(new InstantCommand(() -> claw.setRotation(-0.05), claw))
+            .onTrue(new InstantCommand(() -> claw.setRotation(-0.1), claw))
             .onFalse(new InstantCommand(() -> claw.holdRotation(), claw));
 
         IOConstants.commandController.povDown()
-            .onTrue(new InstantCommand(() -> claw.setRotation(0.2), claw))
+            .onTrue(new InstantCommand(() -> claw.setRotation(0.05), claw))
             .onFalse(new InstantCommand(() -> claw.holdRotation(), claw));
 
         new DoubleEvent(rightY, (y) -> y >= 0.05 || y <= -0.05)
