@@ -6,10 +6,14 @@ import com.revrobotics.CANSparkMax.SoftLimitDirection;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.util.sendable.SendableBuilder;
+import edu.wpi.first.wpilibj2.command.CommandBase;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.Constants.ClawConstants;
 import frc.robot.Constants.IOConstants;
 import wildlib.PIDSparkMax;
+import wildlib.utils.MathUtils;
 
 public class Claw extends SubsystemBase {
     private static Claw m_instance;
@@ -91,6 +95,13 @@ public class Claw extends SubsystemBase {
     public REVLibError setRotationVelocity(double velocity) {
         return m_rotation.setReference(velocity, ControlType.kVelocity);
     }
+    
+    public CommandBase setRotationAndWait(double position, double range) {
+        return new InstantCommand(() -> setRotationPosition(position))
+            .andThen(new WaitUntilCommand(() -> {
+                return MathUtils.closeEnough(getRotation(), position, range);
+            }));
+    }
 
     public REVLibError holdRotation() {
         return setRotationPosition(getRotation());
@@ -114,6 +125,17 @@ public class Claw extends SubsystemBase {
 
     public REVLibError setContractionVelocity(double velocity) {
         return m_contraction.setReference(velocity, ControlType.kVelocity);
+    }
+
+    public CommandBase setContractionAndWait(double position, double range) {
+        return new InstantCommand(() -> setContractionPosition(position))
+            .andThen(new WaitUntilCommand(() -> {
+                return MathUtils.closeEnough(getContraction(), position, range);
+            }));
+    }
+
+    public double getContraction() {
+        return m_contraction.getPosition();
     }
 
     public void zeroSensors() {

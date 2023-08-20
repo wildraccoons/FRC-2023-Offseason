@@ -8,14 +8,21 @@ import com.revrobotics.CANSparkMax.SoftLimitDirection;
 import com.revrobotics.SparkMaxLimitSwitch;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.util.sendable.SendableBuilder;
 // WPI
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandBase;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 // Local
 import frc.robot.Constants.IOConstants;
 import frc.robot.Constants.ArmConstants;
 import wildlib.PIDSparkMax;
+import wildlib.utils.MathUtils;
 
 public class Arm extends SubsystemBase {
     private final PIDSparkMax m_extension;
@@ -111,6 +118,13 @@ public class Arm extends SubsystemBase {
         return setExtensionVelocity(0.0);
     }
 
+    public CommandBase setExtensionAndWait(double position, double range) {
+        return new InstantCommand(() -> setExtensionPosition(position), this)
+            .andThen(new WaitUntilCommand(() -> {
+                return MathUtils.closeEnough(getExtension(), position, range/2);
+            }));
+    }
+
     public double getExtension() {
         return m_extension.getPosition();
     }
@@ -125,6 +139,14 @@ public class Arm extends SubsystemBase {
 
     public REVLibError setRotationVelocity(double velocity) {
         return m_extension.setReference(velocity, ControlType.kVelocity);
+    }
+
+    public CommandBase setRotationAndWait(double position, double range) {
+        return new InstantCommand(() -> setRotationPosition(position), this)
+            .andThen(new WaitUntilCommand(() -> {
+                zeroLimit();
+                return MathUtils.closeEnough(getRotation(), position, range/2);
+            }));
     }
 
     public REVLibError holdRotation() {
