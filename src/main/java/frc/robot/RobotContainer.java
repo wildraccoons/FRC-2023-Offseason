@@ -13,16 +13,25 @@ import frc.robot.subsystems.PicoLED;
 // Constants
 import frc.robot.Constants.IOConstants;
 import frc.robot.Constants.AutoConstants;
+import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.VisionConstants;
 // Wildlib
 import wildlib.utils.commands.DoubleEvent;
 import wildlib.utils.ds.DoubleInput;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 // Std
 import java.util.List;
 import java.util.function.DoubleSupplier;
 // Navx-micro
 import com.kauailabs.navx.frc.AHRS;
+import com.pathplanner.lib.PathConstraints;
+import com.pathplanner.lib.PathPlanner;
+import com.pathplanner.lib.PathPlannerTrajectory;
+import com.pathplanner.lib.auto.PIDConstants;
+import com.pathplanner.lib.auto.SwerveAutoBuilder;
+
 // Math
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
@@ -43,6 +52,7 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.PIDCommand;
+import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.DriverStation.MatchType;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
@@ -233,6 +243,42 @@ public class RobotContainer {
             .onTrue(new InstantCommand(() -> IOConstants.controller.setRumble(RumbleType.kBothRumble, Math.copySign(1.0, navxJerkY.getAsDouble()))));
     }
 
+    private Command getScoreCommand() {
+        return arm.setRotationAndWait(0, 0.1)
+            .alongWith(claw.setRotationAndWait(2, 0.1))
+            .andThen(
+                arm.setExtensionAndWait(30, 0.1),
+                claw.setRotationAndWait(3.5, 0.1)
+            )
+            .alongWith(claw.setContractionAndWait(50, 1))
+            .andThen(arm.setExtensionAndWait(0, 0.1));
+    }
+
+    public Command getPathplannerCommand() {
+        List<PathPlannerTrajectory> path = PathPlanner.loadPathGroup("Around", new PathConstraints(DriveConstants.maxTranslationalSpeed, DriveConstants.maxAcceleration));
+        
+        HashMap<String, Command> events = new HashMap<>();
+        events.put("start", new PrintCommand("Start"));
+        events.put("marker1", new PrintCommand("Marker 1"));
+        events.put("marker2", new PrintCommand("Marker 2"));
+        events.put("marker3", new PrintCommand("Marker 3"));
+        events.put("stop", new PrintCommand("Stop").alongWith(getScoreCommand()));
+
+        SwerveAutoBuilder autoBuilder = new SwerveAutoBuilder(
+            drive::getPose,
+            drive::resetOdometry,
+            drive.getKinematics(),
+            new PIDConstants(AutoConstants.xControllerKp, 0, 0),
+            new PIDConstants(AutoConstants.yControllerKp, 0, 0),
+            drive::setModuleStates,
+            events,
+            false,
+            drive
+        );
+
+        return autoBuilder.fullAuto(path);
+    }
+
     /**
      * Use this to pass the autonomous command to the main {@link Robot} class.
      *
@@ -257,7 +303,7 @@ public class RobotContainer {
         ProfiledPIDController thetaController = new ProfiledPIDController(
             AutoConstants.thetaControllerKp, 0, 0, AutoConstants.thetaControllerConstraints
         );
-        thetaController.enableContinuousInput(-Math.PI, Math.PI);
+        thetaController.enableContinuousInput(-Math.PI, Math.PI); 
 
         SwerveControllerCommand swerveControllerCommand = new SwerveControllerCommand(
             sTrajectory,

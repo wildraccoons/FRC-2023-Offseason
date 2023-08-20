@@ -50,10 +50,12 @@ public final class Constants {
         /** Angular offsets of each module (in rads) */
         public static final double[] angularOffsets = {aAngularOffset, bAngularOffset, cAngularOffset, dAngularOffset};
 
-        /** Max translaitonal speed (in m/s) */
+        /** Max translaitonal speed (m/s) */
         public static final double maxTranslationalSpeed = 4.8;
-        /** Max angular speed (in rads/s) */
+        /** Max angular speed (rads/s) */
         public static final double maxAngularSpeed = Math.PI;
+        /** Max translation acceleration (m/s) */
+        public static final double maxAcceleration = 4.0; // TODO: Actually find this.
 
         /** Maximum speed at which the translation vector direction ({@code Math.atan2(y, x)}) can change. Measured in rads/s. */
         public static final double directionSlewRate = Math.PI / 2; // TODO: Tune direction slew rate
