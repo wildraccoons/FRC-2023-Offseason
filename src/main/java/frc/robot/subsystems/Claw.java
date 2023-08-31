@@ -147,7 +147,7 @@ public class Claw extends SubsystemBase {
     public void initSendable(SendableBuilder builder) {
         super.initSendable(builder);
 
-        builder.addDoubleProperty("Claw Contraction", () -> m_contraction.getPosition(), null);
-        builder.addDoubleProperty("Claw Contraction", () -> m_rotation.getPosition(), null);
+        builder.addDoubleProperty("Claw Contraction", () -> m_contraction.getPosition(), (position) -> setContractionPosition(position));
+        builder.addDoubleProperty("Claw Rotation", () -> m_rotation.getPosition(), (position) -> setRotationPosition(position));
     }
 }
