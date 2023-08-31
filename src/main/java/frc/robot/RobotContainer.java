@@ -19,7 +19,6 @@ import frc.robot.Constants.VisionConstants;
 import wildlib.utils.commands.DoubleEvent;
 import wildlib.utils.ds.DoubleInput;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 // Std
 import java.util.List;
@@ -192,12 +191,12 @@ public class RobotContainer {
             .onTrue(new InstantCommand(() -> claw.setRotation(0.05), claw))
             .onFalse(new InstantCommand(() -> claw.holdRotation(), claw));
 
-        new DoubleEvent(rightY, (y) -> y >= 0.05 || y <= -0.05)
+        new DoubleEvent(rightY, (y) -> y >= 0.1 || y <= -0.1)
             .castTo(Trigger::new)
-            .onTrue(new InstantCommand(() -> arm.setExtension(rightY.getAsDouble() * 0.3), arm))
+            .whileTrue(new RunCommand(() -> arm.setExtension(rightY.getAsDouble() * 0.3), arm))
             .onFalse(new InstantCommand(() -> {
-                arm.holdExtension();
                 arm.zeroLimit();
+                arm.holdExtension();
             }, arm));
 
         IOConstants.commandController.y()
@@ -205,7 +204,7 @@ public class RobotContainer {
             .onFalse(new InstantCommand(() -> arm.holdRotation(), arm));
 
         IOConstants.commandController.a()
-            .onTrue(new InstantCommand(() -> arm.setRotation(0.2), arm))
+            .onTrue(new InstantCommand(() -> arm.setRotation(0.3), arm))
             .onFalse(new InstantCommand(() -> arm.holdRotation(), arm));
 
         IOConstants.commandController.back()
@@ -228,6 +227,9 @@ public class RobotContainer {
         }, drive);
 
         SmartDashboard.putData("Cross Wheels", cross);
+
+        SmartDashboard.putData(arm);
+        SmartDashboard.putData(claw);
 
         testInput = new DoubleInput("Test Input", 10.0);
         System.out.println(testInput.get());
