@@ -58,11 +58,11 @@ public final class Constants {
         public static final double maxAcceleration = 4.0; // TODO: Actually find this.
 
         /** Maximum speed at which the translation vector direction ({@code Math.atan2(y, x)}) can change. Measured in rads/s. */
-        public static final double directionSlewRate = Math.PI / 2; // TODO: Tune direction slew rate
+        public static final double directionSlewRate = Math.PI / 2;
         /** Maximum speed at which the translation vector magnitude ({@code Math.sqrt(x*x + y*y)}) can change. Measured in percent/s (1 = 100%). */
-        public static final double magnitudeSlewRate = 1.0; // TODO: Tune magnitude slew rate
+        public static final double magnitudeSlewRate = 1.0;
         /** Maximum speed at which the rotation vector magnitude can change. Measured in percent/s (1 = 100%). */
-        public static final double rotationalSlewRate = 2.0; // TODO: Tune rotational slew rate
+        public static final double rotationalSlewRate = 2.0;
 
         /** Used to invert the gyroscope direction. */
         public static final boolean gyroReversed = true;
@@ -83,7 +83,7 @@ public final class Constants {
         public static final double kExtensionConversionFactor = 1.0; // TODO: actually measure arm extension factor.  Just measure how far it moves after 10 rotations and extrapolate from there.
         // TODO: Tune arm extension PID.
         /** kP for the extension PID controller. */
-        public static final double kExtensionP = 1.0;
+        public static final double kExtensionP = 0.4;
         /** kI for the extension PID controller. */
         public static final double kExtensionI = 0.0;
         /** kD for the extension PID controller. */
@@ -94,12 +94,12 @@ public final class Constants {
         /** The minimum arm rotation without breaking the mechanism. */
         public static final float kMinRotation = 0.0f;
         /** The maximum arm rotation without breaking the mechanism. */
-        public static final float kMaxRotation = 6.0f;
+        public static final float kMaxRotation = 15.0f;
         /** Conversion factor for arm rotation motor rotations to radians of arm rotation. */
         public static final double kRotationConversionFactor = 1.0; // TODO: actually measure arm rotation factor. Should just be the gear ratio * τ.
         // TODO: Tune claw contraction PID.
         /** kP for the rotation PID controller. */
-        public static final double kRotationP = 1.0;
+        public static final double kRotationP = 0.2;
         /** kI for the rotation PID controller. */
         public static final double kRotationI = 0.0;
         /** kD for the rotation PID controller. */
