@@ -61,6 +61,9 @@ public class Arm extends SubsystemBase {
         m_rotation.enableSoftLimit(SoftLimitDirection.kReverse, true);
         m_rotation.setSoftLimit(SoftLimitDirection.kReverse, ArmConstants.kMinRotation);
 
+        m_rotation.setMinOutput(-0.25);
+        m_rotation.setMaxOutput(0.4);
+
         m_rotation.enableSoftLimit(SoftLimitDirection.kForward, true);
         m_rotation.setSoftLimit(SoftLimitDirection.kForward, ArmConstants.kMaxRotation);
 
@@ -75,8 +78,8 @@ public class Arm extends SubsystemBase {
         m_extension.enableSoftLimit(SoftLimitDirection.kForward, true);
         m_extension.setSoftLimit(SoftLimitDirection.kForward, ArmConstants.kMaxExtension);
 
-        m_extension.setMaxOutput(0.25);
-        m_extension.setMinOutput(-0.25);
+        m_extension.setMaxOutput(0.30);
+        m_extension.setMinOutput(-0.30);
 
         m_extension.setInverted(true);
 
@@ -87,9 +90,7 @@ public class Arm extends SubsystemBase {
     }
 
     @Override
-    public void periodic() {
-        
-    }
+    public void periodic() {}
     
     /**
      * Sets the speed of the extension motor.
@@ -115,7 +116,7 @@ public class Arm extends SubsystemBase {
     }
     
     public REVLibError holdExtension() {
-        return setExtensionVelocity(0.0);
+        return setExtensionPosition(getExtension());
     }
 
     public CommandBase setExtensionAndWait(double position, double range) {
@@ -130,7 +131,7 @@ public class Arm extends SubsystemBase {
     }
     
     public void setRotation(double speed) {
-        m_extension.set(speed);
+        m_rotation.set(speed);
     }
 
     public REVLibError setRotationPosition(double position) {
@@ -138,7 +139,7 @@ public class Arm extends SubsystemBase {
     }
 
     public REVLibError setRotationVelocity(double velocity) {
-        return m_extension.setReference(velocity, ControlType.kVelocity);
+        return m_rotation.setReference(velocity, ControlType.kVelocity);
     }
 
     public CommandBase setRotationAndWait(double position, double range) {
@@ -150,7 +151,7 @@ public class Arm extends SubsystemBase {
     }
 
     public REVLibError holdRotation() {
-        return setRotationVelocity(0.0);
+        return setRotationPosition(getRotation());
     }
 
     public double getRotation() {
