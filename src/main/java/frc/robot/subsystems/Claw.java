@@ -97,6 +97,7 @@ public class Claw extends SubsystemBase {
     }
     
     public CommandBase setRotationAndWait(double position, double range) {
+        System.out.println("claw rotation called");
         return new InstantCommand(() -> setRotationPosition(position))
             .andThen(new WaitUntilCommand(() -> {
                 return MathUtils.closeEnough(getRotation(), position, range);
@@ -128,6 +129,7 @@ public class Claw extends SubsystemBase {
     }
 
     public CommandBase setContractionAndWait(double position, double range) {
+        System.out.println("contraction called");
         return new InstantCommand(() -> setContractionPosition(position))
             .andThen(new WaitUntilCommand(() -> {
                 return MathUtils.closeEnough(getContraction(), position, range);

@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
@@ -120,10 +121,11 @@ public class Arm extends SubsystemBase {
     }
 
     public CommandBase setExtensionAndWait(double position, double range) {
+        System.out.println("extension called");
         return new InstantCommand(() -> setExtensionPosition(position), this)
             .andThen(new WaitUntilCommand(() -> {
                 return MathUtils.closeEnough(getExtension(), position, range/2);
-            }));
+            }).alongWith(new RunCommand(() -> zeroLimit())));
     }
 
     public double getExtension() {
@@ -143,6 +145,7 @@ public class Arm extends SubsystemBase {
     }
 
     public CommandBase setRotationAndWait(double position, double range) {
+        System.out.println("arm rotation called");
         return new InstantCommand(() -> setRotationPosition(position), this)
             .andThen(new WaitUntilCommand(() -> {
                 zeroLimit();
