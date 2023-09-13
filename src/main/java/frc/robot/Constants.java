@@ -83,7 +83,7 @@ public final class Constants {
         public static final double kExtensionConversionFactor = 1.0; // TODO: actually measure arm extension factor.  Just measure how far it moves after 10 rotations and extrapolate from there.
         // TODO: Tune arm extension PID.
         /** kP for the extension PID controller. */
-        public static final double kExtensionP = 0.4;
+        public static final double kExtensionP = 0.2;
         /** kI for the extension PID controller. */
         public static final double kExtensionI = 0.0;
         /** kD for the extension PID controller. */
@@ -99,7 +99,7 @@ public final class Constants {
         public static final double kRotationConversionFactor = 1.0; // TODO: actually measure arm rotation factor. Should just be the gear ratio * τ.
         // TODO: Tune claw contraction PID.
         /** kP for the rotation PID controller. */
-        public static final double kRotationP = 0.2;
+        public static final double kRotationP = 0.5;
         /** kI for the rotation PID controller. */
         public static final double kRotationI = 0.0;
         /** kD for the rotation PID controller. */
