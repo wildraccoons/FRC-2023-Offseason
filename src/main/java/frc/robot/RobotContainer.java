@@ -168,10 +168,10 @@ public class RobotContainer {
                 }, drive
             ));
 
-        IOConstants.commandController.rightBumper().onTrue(new InstantCommand(() -> System.out.println(navx.getAngle())));
+        // IOConstants.commandController.rightBumper().onTrue(new InstantCommand(() -> System.out.println(navx.getAngle())));
         IOConstants.commandController.start().onTrue(new InstantCommand(() -> {
             System.out.println("Zeroing sensors");
-            navx.zeroYaw();
+            navx.reset();
             claw.zeroSensors();
         }));
 
@@ -208,14 +208,10 @@ public class RobotContainer {
             .onFalse(new InstantCommand(() -> arm.holdRotation(), arm));
 
         IOConstants.commandController.back()
-            .onTrue(new RunCommand(() -> arm.setExtensionPosition(extension.getDouble(10.0))))
-            .onFalse(new InstantCommand(() -> {
-                arm.zeroLimit();
-                arm.holdExtension();
-            }));
+            .onTrue(debugPrint());
 
         IOConstants.commandController.rightBumper()
-            .whileTrue(getBalanceCommand());
+            .whileTrue(getScoreCommand());
     }
 
     private void configureDashboard() {
@@ -246,14 +242,11 @@ public class RobotContainer {
     }
 
     private Command getScoreCommand() {
-        return arm.setRotationAndWait(0, 0.1)
-            .alongWith(claw.setRotationAndWait(2, 0.1))
-            .andThen(
-                arm.setExtensionAndWait(30, 0.1),
-                claw.setRotationAndWait(3.5, 0.1)
-            )
+        return arm.setExtensionAndWait(30, 0.1)
+            .andThen(claw.setRotationAndWait(3.5, 0.1))
             .alongWith(claw.setContractionAndWait(50, 1))
-            .andThen(arm.setExtensionAndWait(0, 0.1));
+            .andThen(arm.setExtensionAndWait(0, 0.1))
+            .alongWith(claw.setRotationAndWait(0.0, 0.1));
     }
 
     public Command getPathplannerCommand() {
@@ -327,18 +320,69 @@ public class RobotContainer {
         return swerveControllerCommand.andThen(() -> drive.drive(0, 0, 0, false, false));
     }
 
+    private Command newAutonomousCommand(Pose2d start, List<Translation2d> points, Pose2d end, boolean startReset) {
+        TrajectoryConfig config = new TrajectoryConfig(
+            AutoConstants.maxVelocity,
+            AutoConstants.maxAcceleration
+        ).setKinematics(drive.getKinematics());
 
-    private PIDCommand getBalanceCommand() {
-        return new PIDCommand(new PIDController(1, 0, 0), () -> {
-            // Rotate unit vector to face the same direction as the robot.
-            Translation3d face = new Translation3d(1, 0, 0).rotateBy(getHeading());
-            // Get the pitch of the robot from the ground regardless of yaw.
-            return Math.atan2(face.getY(), Math.sqrt(face.getX()*face.getX() + face.getZ()*face.getZ()));
-        }, 0, (double output) -> drive.drive(output / 4, 0, 0, true, false), drive);
+        Trajectory sTrajectory = TrajectoryGenerator.generateTrajectory(start, points, end, config);
+
+        ProfiledPIDController thetaController = new ProfiledPIDController(
+            AutoConstants.thetaControllerKp, 0, 0, AutoConstants.thetaControllerConstraints
+        );
+        thetaController.enableContinuousInput(-Math.PI, Math.PI); 
+
+        SwerveControllerCommand swerveControllerCommand = new SwerveControllerCommand(
+            sTrajectory,
+            drive::getPose,
+            drive.getKinematics(),
+
+            // Drive controllers
+            new PIDController(AutoConstants.xControllerKp, 0, 0),
+            new PIDController(AutoConstants.yControllerKp, 0, 0),
+            thetaController,
+            drive::setModuleStates,
+            drive
+        );
+
+        if (startReset) {
+            // Reset odometry to the starting pose of the trajectory
+            drive.resetOdometry(sTrajectory.getInitialPose());
+        }
+
+        // Run the command, then stop.
+        return swerveControllerCommand.andThen(() -> drive.drive(0, 0, 0, false, false));
     }
 
-    private Rotation3d getHeading() {
-        return new Rotation3d(navx.getRoll(), navx.getPitch(), navx.getYaw());
+    private PIDCommand getBalanceCommand() {
+        return new PIDCommand(new PIDController(0.325, 0.01, 0), () -> {
+            // // Rotate unit vector to face the same direction as the robot.
+            // Translation3d face = new Translation3d(1, 0, 0).rotateBy(getHeading());
+            // // Get the pitch of the robot from the ground regardless of yaw.
+            // double angle = Math.atan2(face.getY(), Math.sqrt(face.getX()*face.getX() + face.getZ()*face.getZ()));
+            // System.out.println(getHeading());
+            // System.out.println(face);
+            // System.out.println(angle);
+            System.out.println(navx.getRoll() * Math.PI / 180.0);
+            
+            return MathUtil.applyDeadband(navx.getRoll() * -Math.PI / 180.0, 0.025);
+        }, 0, (double output) -> {
+            if (output == 0) {
+                drive.crossWheels();
+            } else {
+                drive.drive(output, 0, 0, true, false);
+            }
+        }, drive);
+    }
+
+    private Command debugPrint() {
+        return new InstantCommand(() -> {
+            System.out.println("Arm rotation: " + arm.getRotation());
+            System.out.println("Arm extension: " + arm.getExtension());
+            System.out.println("Claw rotation: " + claw.getRotation());
+            System.out.println("Claw contraction: " + claw.getContraction());
+        }, arm, claw);
     }
 
     private void initTelemetry(SubsystemBase[] subsystems) {
