@@ -120,12 +120,15 @@ public class Arm extends SubsystemBase {
         return setExtensionPosition(getExtension());
     }
 
-    public CommandBase setExtensionAndWait(double position, double range) {
-        System.out.println("extension called");
-        return new InstantCommand(() -> setExtensionPosition(position), this)
+    public Command setExtensionAndWait(double position, double range) {
+        return new InstantCommand(() -> {
+                System.out.println("extension called");
+                setExtensionPosition(position);
+            }, this)
             .andThen(new WaitUntilCommand(() -> {
+                zeroLimit();
                 return MathUtils.closeEnough(getExtension(), position, range/2);
-            }).alongWith(new RunCommand(() -> zeroLimit())));
+            }));
     }
 
     public double getExtension() {
@@ -145,10 +148,11 @@ public class Arm extends SubsystemBase {
     }
 
     public CommandBase setRotationAndWait(double position, double range) {
-        System.out.println("arm rotation called");
-        return new InstantCommand(() -> setRotationPosition(position), this)
+        return new InstantCommand(() -> {
+                System.out.println("arm rotation called");
+                setRotationPosition(position);
+            }, this)
             .andThen(new WaitUntilCommand(() -> {
-                zeroLimit();
                 return MathUtils.closeEnough(getRotation(), position, range/2);
             }));
     }

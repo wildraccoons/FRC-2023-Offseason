@@ -171,6 +171,7 @@ public class RobotContainer {
         // IOConstants.commandController.rightBumper().onTrue(new InstantCommand(() -> System.out.println(navx.getAngle())));
         IOConstants.commandController.start().onTrue(new InstantCommand(() -> {
             System.out.println("Zeroing sensors");
+            navx.resetDisplacement();
             navx.reset();
             claw.zeroSensors();
         }));
@@ -184,11 +185,11 @@ public class RobotContainer {
             .onFalse(new InstantCommand(() -> claw.stopContraction(), claw));
             
             IOConstants.commandController.povUp()
-            .onTrue(new InstantCommand(() -> claw.setRotation(-0.1), claw))
+            .onTrue(new InstantCommand(() -> claw.setRotation(-0.25), claw))
             .onFalse(new InstantCommand(() -> claw.holdRotation(), claw));
 
         IOConstants.commandController.povDown()
-            .onTrue(new InstantCommand(() -> claw.setRotation(0.05), claw))
+            .onTrue(new InstantCommand(() -> claw.setRotation(0.1), claw))
             .onFalse(new InstantCommand(() -> claw.holdRotation(), claw));
 
         new DoubleEvent(rightY, (y) -> y >= 0.1 || y <= -0.1)
@@ -211,7 +212,15 @@ public class RobotContainer {
             .onTrue(debugPrint());
 
         IOConstants.commandController.rightBumper()
-            .whileTrue(getScoreCommand());
+            .whileTrue(
+                newAutoDrive(new Pose2d(0, 0, new Rotation2d()), List.of(), new Pose2d(-1, 0, new Rotation2d()))
+                .andThen(new PrintCommand("finished driving"))
+                // getScoreCommand()
+                // .andThen(
+                //     newAutoDrive(new Pose2d(0, 0, new Rotation2d()), List.of(), new Pose2d(-1, 0, new Rotation2d())),
+                //     getBalanceCommand()
+                // )
+            );
     }
 
     private void configureDashboard() {
@@ -242,11 +251,9 @@ public class RobotContainer {
     }
 
     private Command getScoreCommand() {
-        return arm.setExtensionAndWait(30, 0.1)
-            .andThen(claw.setRotationAndWait(3.5, 0.1))
-            .alongWith(claw.setContractionAndWait(50, 1))
-            .andThen(arm.setExtensionAndWait(0, 0.1))
-            .alongWith(claw.setRotationAndWait(0.0, 0.1));
+        return arm.setExtensionAndWait(33, 0.5)
+            .andThen(claw.setRotationAndWait(3.5, 0.1).alongWith(claw.setContractionAndWait(50, 1)))
+            .andThen(arm.setExtensionAndWait(0, 0.1)).alongWith(claw.setRotationAndWait(0.0, 0.1));
     }
 
     public Command getPathplannerCommand() {
@@ -320,13 +327,13 @@ public class RobotContainer {
         return swerveControllerCommand.andThen(() -> drive.drive(0, 0, 0, false, false));
     }
 
-    private Command newAutonomousCommand(Pose2d start, List<Translation2d> points, Pose2d end, boolean startReset) {
+    private Command newAutoDrive(Pose2d start, List<Translation2d> points, Pose2d end, boolean startReset) {
         TrajectoryConfig config = new TrajectoryConfig(
             AutoConstants.maxVelocity,
             AutoConstants.maxAcceleration
         ).setKinematics(drive.getKinematics());
 
-        Trajectory sTrajectory = TrajectoryGenerator.generateTrajectory(start, points, end, config);
+        Trajectory trajectory = TrajectoryGenerator.generateTrajectory(start, points, end, config);
 
         ProfiledPIDController thetaController = new ProfiledPIDController(
             AutoConstants.thetaControllerKp, 0, 0, AutoConstants.thetaControllerConstraints
@@ -334,7 +341,7 @@ public class RobotContainer {
         thetaController.enableContinuousInput(-Math.PI, Math.PI); 
 
         SwerveControllerCommand swerveControllerCommand = new SwerveControllerCommand(
-            sTrajectory,
+            trajectory,
             drive::getPose,
             drive.getKinematics(),
 
@@ -348,11 +355,15 @@ public class RobotContainer {
 
         if (startReset) {
             // Reset odometry to the starting pose of the trajectory
-            drive.resetOdometry(sTrajectory.getInitialPose());
+            drive.resetOdometry(trajectory.getInitialPose());
         }
 
         // Run the command, then stop.
         return swerveControllerCommand.andThen(() -> drive.drive(0, 0, 0, false, false));
+    }
+
+    private Command newAutoDrive(Pose2d start, List<Translation2d> points, Pose2d end) {
+        return newAutoDrive(start, points, end, true);
     }
 
     private PIDCommand getBalanceCommand() {

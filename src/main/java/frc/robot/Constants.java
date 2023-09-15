@@ -78,7 +78,7 @@ public final class Constants {
          */
         public static final float kMinExtension = 0.0f;
         /** The maximum arm extension without breaking the mechanism. */
-        public static final float kMaxExtension = 30.0f;
+        public static final float kMaxExtension = 34.0f;
         /** Conversion factor for arm extension motor rotations to meters of extension. */
         public static final double kExtensionConversionFactor = 1.0; // TODO: actually measure arm extension factor.  Just measure how far it moves after 10 rotations and extrapolate from there.
         // TODO: Tune arm extension PID.
