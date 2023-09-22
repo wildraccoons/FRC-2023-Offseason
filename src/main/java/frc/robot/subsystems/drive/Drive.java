@@ -7,6 +7,9 @@ import static frc.robot.Constants.DriveConstants;
 import static frc.robot.Constants.IOConstants;
 
 import com.kauailabs.navx.frc.AHRS;
+import com.pathplanner.lib.PathPlannerTrajectory;
+import com.pathplanner.lib.commands.PPSwerveControllerCommand;
+
 import edu.wpi.first.wpilibj.I2C;
 
 import edu.wpi.first.util.WPIUtilJNI;
@@ -14,6 +17,7 @@ import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -23,7 +27,8 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 /** Control subsystem used to command a swerve drive base. */
@@ -308,6 +313,25 @@ public class Drive extends SubsystemBase {
 
     public AHRS getNavx() {
         return gyro;
+    }
+
+    public Command followTrajectory(PathPlannerTrajectory trajectory, boolean reset) {
+        return new InstantCommand(() -> {
+            if (reset) {
+                this.resetOdometry(trajectory.getInitialHolonomicPose());
+            }
+        }, this)
+        .andThen(new PPSwerveControllerCommand(
+            trajectory,
+            this::getPose,
+            this.kinematics,
+            new PIDController(currentTranslationDir, currentRotation, base),
+            new PIDController(currentTranslationDir, currentRotation, base),
+            new PIDController(currentTranslationDir, currentRotation, base),
+            this::setModuleStates,
+            true,
+            this
+        ));
     }
     
     @Override

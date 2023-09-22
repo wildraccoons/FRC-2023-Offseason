@@ -28,6 +28,7 @@ import com.kauailabs.navx.frc.AHRS;
 import com.pathplanner.lib.PathConstraints;
 import com.pathplanner.lib.PathPlanner;
 import com.pathplanner.lib.PathPlannerTrajectory;
+import com.pathplanner.lib.PathPoint;
 import com.pathplanner.lib.auto.PIDConstants;
 import com.pathplanner.lib.auto.SwerveAutoBuilder;
 
@@ -213,13 +214,15 @@ public class RobotContainer {
 
         IOConstants.commandController.rightBumper()
             .whileTrue(
-                newAutoDrive(new Pose2d(0, 0, new Rotation2d()), List.of(), new Pose2d(-1, 0, new Rotation2d()))
-                .andThen(new PrintCommand("finished driving"))
-                // getScoreCommand()
-                // .andThen(
-                //     newAutoDrive(new Pose2d(0, 0, new Rotation2d()), List.of(), new Pose2d(-1, 0, new Rotation2d())),
-                //     getBalanceCommand()
-                // )
+                getScoreCommand()
+                .andThen(
+                    drive.followTrajectory(PathPlanner.generatePath(
+                        new PathConstraints(DriveConstants.maxAngularSpeed, DriveConstants.maxAcceleration),
+                        new PathPoint(new Translation2d(0.0, 0.0), Rotation2d.fromDegrees(0.0)),
+                        new PathPoint(new Translation2d(-2.0, 0.0), Rotation2d.fromDegrees(0.0))
+                    ), true),
+                    getBalanceCommand()
+                )
             );
     }
 
@@ -251,9 +254,9 @@ public class RobotContainer {
     }
 
     private Command getScoreCommand() {
-        return arm.setExtensionAndWait(33, 0.5)
+        return arm.setExtensionAndWait(32, 0.5)
             .andThen(claw.setRotationAndWait(3.5, 0.1).alongWith(claw.setContractionAndWait(50, 1)))
-            .andThen(arm.setExtensionAndWait(0, 0.1)).alongWith(claw.setRotationAndWait(0.0, 0.1));
+            .andThen(arm.setExtensionAndWait(2, 0.1)).alongWith(claw.setRotationAndWait(0.0, 0.1));
     }
 
     public Command getPathplannerCommand() {
@@ -367,7 +370,7 @@ public class RobotContainer {
     }
 
     private PIDCommand getBalanceCommand() {
-        return new PIDCommand(new PIDController(0.325, 0.01, 0), () -> {
+        return new PIDCommand(new PIDController(AutoConstants.balanceKp, AutoConstants.balanceKi, AutoConstants.balanceKi), () -> {
             // // Rotate unit vector to face the same direction as the robot.
             // Translation3d face = new Translation3d(1, 0, 0).rotateBy(getHeading());
             // // Get the pitch of the robot from the ground regardless of yaw.

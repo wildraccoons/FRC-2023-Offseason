@@ -298,6 +298,13 @@ public final class Constants {
         public static final TrapezoidProfile.Constraints thetaControllerConstraints = new TrapezoidProfile.Constraints(
             maxAngularVelocity, maxAngularAcceleration
         );
+
+        /** kP for auto-balance PID controller. */
+        public static final double balanceKp = 0.325;
+        /** kI for auto-balance PID controller. */
+        public static final double balanceKi = 0.01;
+        /** kD for auto-balance PID controller. */
+        public static final double balanceKd = 0.0;
     }
 
     /** Contstants used for vision pipelines. */
