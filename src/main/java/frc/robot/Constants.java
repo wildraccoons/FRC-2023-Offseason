@@ -123,7 +123,7 @@ public final class Constants {
         public static final double kContractionD = 0.0;
 
         /** The minimum claw rotation without breaking the mechanism. */
-        public static final float kMinRotation = -2.0f;
+        public static final float kMinRotation = -1f;
         /** The maximum claw rotation without breaking the mechanism. */
         public static final float kMaxRotation = 6.0f;
         /** Conversion factor for claw rotation motor rotations to radians of claw rotation. */
@@ -279,7 +279,7 @@ public final class Constants {
     /** Contants used for auto mode. */
     public static final class AutoConstants {
         /** Max velocity in auto (in m/s). */
-        public static final double maxVelocity = 3;
+        public static final double maxVelocity = 1.35;
         /** Max acceleration in auto (in m/s²) */
         public static final double maxAcceleration = 3;
         /** Max angular velociy in auto (in rad/s). */

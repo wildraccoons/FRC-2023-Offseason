@@ -56,6 +56,8 @@ import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.DriverStation.MatchType;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -104,6 +106,11 @@ public class RobotContainer {
 
     private GenericSubscriber extension;
     private DoubleInput testInput;
+
+    private double maxVelocity = 0.0;
+    private DoubleSupplier maxSpeed = () -> {
+        return maxVelocity;
+    };
 
     /** The container for the robot. Contains subsystems, IO devices, and commands. */
     public RobotContainer() {
@@ -210,7 +217,7 @@ public class RobotContainer {
             .onFalse(new InstantCommand(() -> arm.holdRotation(), arm));
 
         IOConstants.commandController.back()
-            .onTrue(debugPrint());
+            .whileTrue(getPathplannerCommand());
 
         IOConstants.commandController.rightBumper()
             .whileTrue(
@@ -224,6 +231,13 @@ public class RobotContainer {
                     getBalanceCommand()
                 )
             );
+
+        new DoubleEvent(maxSpeed, (speed) -> speed < Math.sqrt(navx.getVelocityX()*navx.getVelocityX() + navx.getVelocityY()*navx.getVelocityY()))
+            .castTo(Trigger::new)
+            .onTrue(new InstantCommand(() -> {
+                maxVelocity = Math.sqrt(navx.getVelocityX()*navx.getVelocityX() + navx.getVelocityY()*navx.getVelocityY());
+                SmartDashboard.putNumber("Max Speed", maxSpeed.getAsDouble());
+            }));
     }
 
     private void configureDashboard() {
@@ -241,6 +255,8 @@ public class RobotContainer {
 
         testInput = new DoubleInput("Test Input", 10.0);
         System.out.println(testInput.get());
+
+        SmartDashboard.putData(navx);
     }
 
     private void configureRumble() {
@@ -254,7 +270,7 @@ public class RobotContainer {
     }
 
     private Command getScoreCommand() {
-        return arm.setExtensionAndWait(32, 0.5)
+        return arm.setExtensionAndWait(30, 0.5)
             .andThen(claw.setRotationAndWait(3.5, 0.1).alongWith(claw.setContractionAndWait(50, 1)))
             .andThen(arm.setExtensionAndWait(2, 0.1)).alongWith(claw.setRotationAndWait(0.0, 0.1));
     }
@@ -264,10 +280,7 @@ public class RobotContainer {
         
         HashMap<String, Command> events = new HashMap<>();
         events.put("start", new PrintCommand("Start"));
-        events.put("marker1", new PrintCommand("Marker 1"));
-        events.put("marker2", new PrintCommand("Marker 2"));
-        events.put("marker3", new PrintCommand("Marker 3"));
-        events.put("stop", new PrintCommand("Stop").alongWith(getScoreCommand()));
+        events.put("Balance", getBalanceCommand());
 
         SwerveAutoBuilder autoBuilder = new SwerveAutoBuilder(
             drive::getPose,
