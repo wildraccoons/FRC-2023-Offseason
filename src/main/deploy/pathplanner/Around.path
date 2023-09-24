@@ -114,7 +114,7 @@
       "isStopPoint": false,
       "stopEvent": {
         "names": [
-          "Balance"
+          "balance"
         ],
         "executionBehavior": "sequential",
         "waitBehavior": "none",
