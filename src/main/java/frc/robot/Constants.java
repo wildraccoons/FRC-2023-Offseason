@@ -281,7 +281,7 @@ public final class Constants {
         /** Max velocity in auto (in m/s). */
         public static final double maxVelocity = 4.5;
         /** Max acceleration in auto (in m/s²) */
-        public static final double maxAcceleration = 4.8;
+        public static final double maxAcceleration = 3.8;
         /** Max angular velociy in auto (in rad/s). */
         public static final double maxAngularVelocity = Math.PI;
         /** Max angular acceleration in auto (in rad/s²) */
