@@ -106,18 +106,16 @@ public class RobotContainer {
         return maxVelocity;
     };
 
+    private static MatchType match;
+
+    private HashMap<String, Command> autoEventMap = new HashMap<>();
+    private static SwerveAutoBuilder autoBuilder;
+
     /** The container for the robot. Contains subsystems, IO devices, and commands. */
     public RobotContainer() {
-        // We don't really need all this extra telemetry in a comp match.
-        MatchType match = DriverStation.getMatchType();
-        if (match == MatchType.None || match == MatchType.Practice) {
-            initTelemetry(new SubsystemBase[] {
-                drive,
-                arm,
-                claw,
-            });
-        }
+        
 
+        initGlobals();
         configureButtonBindings();
         configureDashboard();
         configureRumble();
@@ -139,6 +137,34 @@ public class RobotContainer {
                     );
                 }, drive
             )
+        );
+    }
+
+    private void initGlobals() {
+        // We don't really need all this extra telemetry in a comp match.
+        match = DriverStation.getMatchType();
+        if (match == MatchType.None || match == MatchType.Practice) {
+            initTelemetry(new SubsystemBase[] {
+                drive,
+                arm,
+                claw,
+            });
+        }
+
+        autoEventMap.put("start", new PrintCommand("Start"));
+        autoEventMap.put("balance", getBalanceCommand());
+        autoEventMap.put("score", getScoreCommand());
+
+        autoBuilder = new SwerveAutoBuilder(
+            drive::getPose,
+            drive::resetOdometry,
+            drive.getKinematics(),
+            new PIDConstants(AutoConstants.xControllerKp, 0, 0),
+            new PIDConstants(AutoConstants.yControllerKp, 0, 0),
+            drive::setModuleStates,
+            autoEventMap,
+            false,
+            drive
         );
     }
 
@@ -271,23 +297,6 @@ public class RobotContainer {
 
     public Command getPathplannerCommand() {
         List<PathPlannerTrajectory> path = PathPlanner.loadPathGroup("Around", new PathConstraints(DriveConstants.maxTranslationalSpeed, DriveConstants.maxAcceleration));
-        
-        HashMap<String, Command> events = new HashMap<>();
-        events.put("start", new PrintCommand("Start"));
-        events.put("Balance", getBalanceCommand());
-
-        SwerveAutoBuilder autoBuilder = new SwerveAutoBuilder(
-            drive::getPose,
-            drive::resetOdometry,
-            drive.getKinematics(),
-            new PIDConstants(AutoConstants.xControllerKp, 0, 0),
-            new PIDConstants(AutoConstants.yControllerKp, 0, 0),
-            drive::setModuleStates,
-            events,
-            false,
-            drive
-        );
-
         return autoBuilder.fullAuto(path);
     }
 
@@ -297,44 +306,8 @@ public class RobotContainer {
      * @return the command to run in autonomous
      */
     public Command getAutonomousCommand() {
-        TrajectoryConfig config = new TrajectoryConfig(
-            AutoConstants.maxVelocity,
-            AutoConstants.maxAcceleration
-        ).setKinematics(drive.getKinematics());
-
-        Trajectory sTrajectory = TrajectoryGenerator.generateTrajectory(
-            // Start at origin, facing forwards
-            new Pose2d(0, 0, new Rotation2d()),
-            // Waypoints off to each side to create S shape
-            List.of(new Translation2d(1, 1), new Translation2d(2, -1)),
-            // End 3 meters straight ahead of where we started, facing in the same direction.
-            new Pose2d(3, 0, new Rotation2d()),
-            config
-        );
-
-        ProfiledPIDController thetaController = new ProfiledPIDController(
-            AutoConstants.thetaControllerKp, 0, 0, AutoConstants.thetaControllerConstraints
-        );
-        thetaController.enableContinuousInput(-Math.PI, Math.PI); 
-
-        SwerveControllerCommand swerveControllerCommand = new SwerveControllerCommand(
-            sTrajectory,
-            drive::getPose,
-            drive.getKinematics(),
-
-            // Drive controllers
-            new PIDController(AutoConstants.xControllerKp, 0, 0),
-            new PIDController(AutoConstants.yControllerKp, 0, 0),
-            thetaController,
-            drive::setModuleStates,
-            drive
-        );
-
-        // Reset odometry to the starting pose of the trajectory
-        drive.resetOdometry(sTrajectory.getInitialPose());
-
-        // Run the command, then stop.
-        return swerveControllerCommand.andThen(() -> drive.drive(0, 0, 0, false, false));
+        List<PathPlannerTrajectory> path = PathPlanner.loadPathGroup("Score", new PathConstraints(DriveConstants.maxTranslationalSpeed, DriveConstants.maxAcceleration));
+        return autoBuilder.fullAuto(path);
     }
 
     private Command newAutoDrive(Pose2d start, List<Translation2d> points, Pose2d end, boolean startReset) {
@@ -377,24 +350,21 @@ public class RobotContainer {
     }
 
     private PIDCommand getBalanceCommand() {
-        return new PIDCommand(new PIDController(AutoConstants.balanceKp, AutoConstants.balanceKi, AutoConstants.balanceKi), () -> {
-            // // Rotate unit vector to face the same direction as the robot.
-            // Translation3d face = new Translation3d(1, 0, 0).rotateBy(getHeading());
-            // // Get the pitch of the robot from the ground regardless of yaw.
-            // double angle = Math.atan2(face.getY(), Math.sqrt(face.getX()*face.getX() + face.getZ()*face.getZ()));
-            // System.out.println(getHeading());
-            // System.out.println(face);
-            // System.out.println(angle);
-            System.out.println(navx.getRoll() * Math.PI / 180.0);
-            
-            return MathUtil.applyDeadband(navx.getRoll() * -Math.PI / 180.0, 0.025);
-        }, 0, (double output) -> {
-            if (output == 0) {
-                drive.crossWheels();
-            } else {
-                drive.drive(output, 0, 0, true, false);
-            }
-        }, drive);
+        return new PIDCommand(
+            new PIDController(
+                AutoConstants.balanceKp,
+                AutoConstants.balanceKi,
+                AutoConstants.balanceKi
+            ),
+            () -> MathUtil.applyDeadband(navx.getRoll() * -Math.PI / 180.0, 0.025),
+            0,
+            (double output) -> {
+                if (output == 0) {
+                    drive.crossWheels();
+                } else {
+                    drive.drive(output, 0, 0, true, false);
+                }
+            }, drive);
     }
 
     private Command debugPrint() {
