@@ -279,9 +279,9 @@ public final class Constants {
     /** Contants used for auto mode. */
     public static final class AutoConstants {
         /** Max velocity in auto (in m/s). */
-        public static final double maxVelocity = 1.35;
+        public static final double maxVelocity = 4.5;
         /** Max acceleration in auto (in m/s²) */
-        public static final double maxAcceleration = 3;
+        public static final double maxAcceleration = 4.8;
         /** Max angular velociy in auto (in rad/s). */
         public static final double maxAngularVelocity = Math.PI;
         /** Max angular acceleration in auto (in rad/s²) */
