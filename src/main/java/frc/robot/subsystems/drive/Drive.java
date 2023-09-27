@@ -1,10 +1,13 @@
 package frc.robot.subsystems.drive;
 
+import frc.robot.Constants.AutoConstants;
 import frc.robot.subsystems.drive.MAXSwerveModule.ModuleLabel;
 import wildlib.utils.SwerveUtils;
 
 import static frc.robot.Constants.DriveConstants;
 import static frc.robot.Constants.IOConstants;
+
+import java.util.function.DoubleSupplier;
 
 import com.kauailabs.navx.frc.AHRS;
 import com.pathplanner.lib.PathPlannerTrajectory;
@@ -29,6 +32,8 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.PIDCommand;
+import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 /** Control subsystem used to command a swerve drive base. */
@@ -332,6 +337,14 @@ public class Drive extends SubsystemBase {
             true,
             this
         ));
+    }
+
+    public Command centerRetro(DoubleSupplier position, Subsystem... requirements) {
+        PIDCommand center = new PIDCommand(new PIDController(AutoConstants.xControllerKp, 0.0, 0.0), position, 0, (double speed) -> {
+            drive(speed, 0.0, 0.0, false, true);
+        }, this);
+        center.addRequirements(requirements);
+        return center;
     }
     
     @Override

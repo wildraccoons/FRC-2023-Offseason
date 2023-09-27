@@ -237,20 +237,13 @@ public class RobotContainer {
             .onFalse(new InstantCommand(() -> arm.holdRotation(), arm));
 
         IOConstants.commandController.back()
-            .whileTrue(getPathplannerCommand());
+            .whileTrue(getAutonomousCommand());
 
+        // TODO: Test this, I have no idea if it works
         IOConstants.commandController.rightBumper()
-            .whileTrue(
-                getScoreCommand()
-                .andThen(
-                    drive.followTrajectory(PathPlanner.generatePath(
-                        new PathConstraints(DriveConstants.maxAngularSpeed, DriveConstants.maxAcceleration),
-                        new PathPoint(new Translation2d(0.0, 0.0), Rotation2d.fromDegrees(0.0)),
-                        new PathPoint(new Translation2d(-2.0, 0.0), Rotation2d.fromDegrees(0.0))
-                    ), true),
-                    getBalanceCommand()
-                )
-            );
+            .whileTrue(drive.centerRetro(() -> {
+                return Math.tan(limelight.targetHorizontal()) * 22.0;
+            }, limelight));
 
         new DoubleEvent(maxSpeed, (speed) -> speed < Math.sqrt(navx.getVelocityX()*navx.getVelocityX() + navx.getVelocityY()*navx.getVelocityY()))
             .castTo(Trigger::new)
