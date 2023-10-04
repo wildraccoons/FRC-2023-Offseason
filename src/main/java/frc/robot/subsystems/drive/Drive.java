@@ -1,6 +1,5 @@
 package frc.robot.subsystems.drive;
 
-import frc.robot.Constants.AutoConstants;
 import frc.robot.subsystems.drive.MAXSwerveModule.ModuleLabel;
 import wildlib.utils.SwerveUtils;
 

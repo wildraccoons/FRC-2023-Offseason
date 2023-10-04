@@ -27,7 +27,6 @@ import com.kauailabs.navx.frc.AHRS;
 import com.pathplanner.lib.PathConstraints;
 import com.pathplanner.lib.PathPlanner;
 import com.pathplanner.lib.PathPlannerTrajectory;
-import com.pathplanner.lib.PathPoint;
 import com.pathplanner.lib.auto.PIDConstants;
 import com.pathplanner.lib.auto.SwerveAutoBuilder;
 // Math
@@ -35,7 +34,6 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
@@ -336,10 +334,6 @@ public class RobotContainer {
 
         // Run the command, then stop.
         return swerveControllerCommand.andThen(() -> drive.drive(0, 0, 0, false, false));
-    }
-
-    private Command newAutoDrive(Pose2d start, List<Translation2d> points, Pose2d end) {
-        return newAutoDrive(start, points, end, true);
     }
 
     private PIDCommand getBalanceCommand() {
