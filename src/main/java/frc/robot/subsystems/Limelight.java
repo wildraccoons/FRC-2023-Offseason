@@ -17,10 +17,10 @@ public class Limelight extends SubsystemBase {
         return m_instance;
     }
 
-    protected NetworkTable m_table;
+    protected static NetworkTable m_table;
 
     protected Limelight() {
-        NetworkTableInstance.getDefault().getTable("limelight");
+        m_table = NetworkTableInstance.getDefault().getTable("limelight");
     }
 
     /**
