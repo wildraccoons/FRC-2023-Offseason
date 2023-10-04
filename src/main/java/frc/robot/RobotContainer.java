@@ -194,7 +194,6 @@ public class RobotContainer {
                 }, drive
             ));
 
-        // IOConstants.commandController.rightBumper().onTrue(new InstantCommand(() -> System.out.println(navx.getAngle())));
         IOConstants.commandController.start().onTrue(new InstantCommand(() -> {
             System.out.println("Zeroing sensors");
             navx.resetDisplacement();
@@ -240,11 +239,9 @@ public class RobotContainer {
         IOConstants.commandController.back()
             .whileTrue(getAutonomousCommand());
 
-        // TODO: Test this, I have no idea if it works
+        // Auto-centering score
         IOConstants.commandController.rightBumper()
             .whileTrue(drive.centerRetro(() -> {
-                System.out.println("Offset: " + limelight.targetHorizontal());
-                System.out.println("Distance: " +  Math.tan(Math.toRadians(limelight.targetHorizontal())) * -22.0);
                 return Math.tan(Math.toRadians(limelight.targetHorizontal())) * 22.0;
             }, limelight).alongWith(getScoreCommand()));
 
