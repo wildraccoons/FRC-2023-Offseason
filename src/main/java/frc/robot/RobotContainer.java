@@ -113,8 +113,6 @@ public class RobotContainer {
 
     /** The container for the robot. Contains subsystems, IO devices, and commands. */
     public RobotContainer() {
-        
-
         initGlobals();
         configureButtonBindings();
         configureDashboard();
@@ -236,14 +234,19 @@ public class RobotContainer {
             .onTrue(new InstantCommand(() -> arm.setRotation(0.3), arm))
             .onFalse(new InstantCommand(() -> arm.holdRotation(), arm));
 
+        IOConstants.commandController.b()
+            .onTrue(debugPrint());
+
         IOConstants.commandController.back()
             .whileTrue(getAutonomousCommand());
 
         // TODO: Test this, I have no idea if it works
         IOConstants.commandController.rightBumper()
             .whileTrue(drive.centerRetro(() -> {
-                return Math.tan(limelight.targetHorizontal()) * 22.0;
-            }, limelight));
+                System.out.println("Offset: " + limelight.targetHorizontal());
+                System.out.println("Distance: " +  Math.tan(Math.toRadians(limelight.targetHorizontal())) * -22.0);
+                return Math.tan(Math.toRadians(limelight.targetHorizontal())) * 22.0;
+            }, limelight).alongWith(getScoreCommand()));
 
         new DoubleEvent(maxSpeed, (speed) -> speed < Math.sqrt(navx.getVelocityX()*navx.getVelocityX() + navx.getVelocityY()*navx.getVelocityY()))
             .castTo(Trigger::new)

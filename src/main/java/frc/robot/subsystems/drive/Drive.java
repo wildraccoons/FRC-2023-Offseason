@@ -340,8 +340,8 @@ public class Drive extends SubsystemBase {
     }
 
     public Command centerRetro(DoubleSupplier position, Subsystem... requirements) {
-        PIDCommand center = new PIDCommand(new PIDController(AutoConstants.xControllerKp, 0.0, 0.0), position, 0, (double speed) -> {
-            drive(speed, 0.0, 0.0, false, true);
+        PIDCommand center = new PIDCommand(new PIDController(0.05, 0.0, 0.001), position, -2.5, (double speed) -> {
+            drive(0.0, speed, 0.0, false, true);
         }, this);
         center.addRequirements(requirements);
         return center;
