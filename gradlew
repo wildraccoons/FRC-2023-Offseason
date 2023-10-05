@@ -202,7 +202,6 @@ fi
 set -- \
         "-Dorg.gradle.appname=$APP_BASE_NAME" \
         -classpath "$CLASSPATH" \
-        -encoding "utf-8" \
         org.gradle.wrapper.GradleWrapperMain \
         "$@" 
         
