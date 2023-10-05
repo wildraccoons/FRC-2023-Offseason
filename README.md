@@ -6,7 +6,7 @@ off our tank drive, Jimather.
 
 ## Driving
 
-This robot is driven with an XBox controller or equivalent.
+This robot is driven with an Xbox controller or equivalent.
 
 The controls are as follows:
 - Left Joystick Up: Forwards
