@@ -2,7 +2,7 @@
 
 This is the code for 8891's offseason bot.
 This is our first swerve drive, with our mechanism just lifted
-off our tank drive: [Jimather](https://github.com/wildraccoons/FRC-2023).
+off our tank drive, Jimather.
 
 ## Driving
 
